@@ -1,0 +1,318 @@
+LOOMBO - CONFIGURACION PARA SUSCRIPCIONES CON STRIPE
+====================================================
+
+Este documento explica las configuraciones necesarias para que funcionen los
+casos de uso:
+
+- CU43: Suscribirse a un plan.
+- CU44: Gestionar suscripcion.
+
+La implementacion usa:
+
+- Backend: FastAPI.
+- Frontend web: Next.js.
+- Pasarela de pago: Stripe Checkout.
+- Confirmacion de pago: webhook de Stripe y sincronizacion por session_id.
+
+
+1. ARCHIVOS DE ENTORNO
+----------------------
+
+IMPORTANTE:
+No subir a GitHub archivos con claves reales.
+
+Estos archivos deben existir en cada maquina o servidor, pero no deben
+versionarse:
+
+- server/.env
+- web/.env.local
+
+El repositorio ya ignora estos archivos mediante .gitignore.
+
+
+2. CONFIGURACION BACKEND LOCAL
+------------------------------
+
+Crear el archivo:
+
+server/.env
+
+Contenido minimo para desarrollo local:
+
+DATABASE_URL=sqlite:///./loombo_dev.db
+JWT_SECRET=dev-secret
+JWT_ALG=HS256
+JWT_EXPIRES_MIN=1440
+ENVIRONMENT=DEV
+
+BREVO_API_KEY=dummy
+BREVO_SENDER_EMAIL=test@test.com
+BREVO_SENDER_NAME=LoomBo
+
+OTP_LENGTH=6
+OTP_EXPIRES_MIN=5
+OTP_MAX_ATTEMPTS=5
+OTP_RESEND_COOLDOWN_SEC=60
+
+REDIS_URL=redis://localhost:6379/0
+
+STRIPE_SECRET_KEY=sk_test_tu_clave_de_prueba
+STRIPE_WEBHOOK_SECRET=whsec_tu_clave_de_webhook
+APP_BASE_URL=http://localhost:3000
+STRIPE_PRICE_ID_PROFESSIONAL=
+STRIPE_PRICE_ID_INSTITUTIONAL=
+
+
+Notas:
+
+- STRIPE_SECRET_KEY debe empezar con sk_test_ en desarrollo.
+- STRIPE_WEBHOOK_SECRET se obtiene al ejecutar Stripe CLI con el comando
+  stripe listen.
+- APP_BASE_URL debe apuntar a la URL donde corre la web.
+- STRIPE_PRICE_ID_PROFESSIONAL y STRIPE_PRICE_ID_INSTITUTIONAL son opcionales
+  porque el backend puede crear precios dinamicos con price_data.
+- Si Stripe rechaza la moneda BOB, crear precios en Stripe Dashboard y llenar
+  esos dos STRIPE_PRICE_ID.
+
+
+3. CONFIGURACION FRONTEND LOCAL
+-------------------------------
+
+Crear el archivo:
+
+web/.env.local
+
+Contenido:
+
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
+
+Notas:
+
+- Esta URL debe apuntar al backend.
+- Si el frontend muestra "Error de conexion", revisar que esta variable exista
+  y que el backend este encendido.
+- Despues de crear o cambiar este archivo, reiniciar pnpm dev.
+
+
+4. COMANDOS PARA EJECUTAR LOCALMENTE
+------------------------------------
+
+Backend:
+
+cd server
+.\venv\Scripts\activate
+.\venv\Scripts\python.exe -m uvicorn app.main:app --reload
+
+URL esperada:
+
+http://localhost:8000/docs
+
+
+Frontend:
+
+cd web
+pnpm install
+pnpm dev
+
+URL esperada:
+
+http://localhost:3000
+
+
+5. CONFIGURACION DE STRIPE EN LOCAL
+-----------------------------------
+
+Entrar al Dashboard de Stripe en entorno de prueba:
+
+https://dashboard.stripe.com
+
+Copiar la clave secreta de prueba:
+
+Developers -> API keys -> Secret key
+
+Debe empezar con:
+
+sk_test_
+
+Pegar esa clave en:
+
+server/.env
+
+STRIPE_SECRET_KEY=sk_test_tu_clave_real_de_prueba
+
+
+6. WEBHOOK LOCAL CON STRIPE CLI
+-------------------------------
+
+Instalar Stripe CLI si no esta instalado.
+
+Luego iniciar sesion:
+
+stripe login
+
+Escuchar eventos y reenviarlos al backend local:
+
+stripe listen --forward-to localhost:8000/api/subscriptions/webhook/stripe
+
+Stripe CLI mostrara una clave similar a:
+
+whsec_xxxxxxxxx
+
+Copiarla en:
+
+server/.env
+
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxx
+
+Despues de cambiar el .env, reiniciar el backend.
+
+
+Eventos recomendados en Stripe:
+
+- checkout.session.completed
+- invoice.paid
+- customer.subscription.updated
+- customer.subscription.deleted
+
+
+7. PRUEBA DE PAGO SIN GASTAR DINERO
+-----------------------------------
+
+En entorno de prueba de Stripe no se cobra dinero real.
+
+Tarjeta demo de pago exitoso:
+
+4242 4242 4242 4242
+
+Datos restantes:
+
+- Fecha: cualquier fecha futura, por ejemplo 12/34.
+- CVC: cualquier numero, por ejemplo 123.
+- Nombre: cualquiera.
+- Codigo postal: cualquiera.
+
+Flujo esperado:
+
+1. Iniciar sesion en LoomBo.
+2. Crear o seleccionar una escuela donde el usuario sea director/owner.
+3. Ir a Mejorar plan.
+4. Elegir Profesional o Institucional.
+5. El sistema redirige a Stripe Checkout.
+6. Pagar con tarjeta demo.
+7. Stripe redirige a la pantalla de exito.
+8. La pantalla de exito sincroniza la sesion con el backend.
+9. El backend consulta Stripe y actualiza la suscripcion.
+10. Entrar a Plan actual y verificar el plan actualizado.
+
+
+8. CONFIGURACION PARA DESPLIEGUE
+--------------------------------
+
+En servidor, las URLs deben cambiarse.
+
+Backend en produccion o staging:
+
+DATABASE_URL=postgresql+psycopg://usuario:password@host:puerto/db
+JWT_SECRET=clave_segura_larga
+ENVIRONMENT=PROD
+
+STRIPE_SECRET_KEY=sk_test_o_sk_live_segun_ambiente
+STRIPE_WEBHOOK_SECRET=whsec_del_webhook_real
+APP_BASE_URL=https://tu-dominio-web.com
+STRIPE_PRICE_ID_PROFESSIONAL=price_xxxxx
+STRIPE_PRICE_ID_INSTITUTIONAL=price_xxxxx
+
+
+Frontend desplegado:
+
+NEXT_PUBLIC_API_URL=https://tu-dominio-api.com/api
+
+
+Webhook en Stripe Dashboard:
+
+Endpoint URL:
+
+https://tu-dominio-api.com/api/subscriptions/webhook/stripe
+
+Eventos:
+
+- checkout.session.completed
+- invoice.paid
+- customer.subscription.updated
+- customer.subscription.deleted
+
+
+9. CONSIDERACIONES IMPORTANTES
+------------------------------
+
+- En desarrollo usar siempre claves sk_test_.
+- En produccion real usar sk_live_ solo cuando el equipo este seguro.
+- Nunca subir server/.env ni web/.env.local a GitHub.
+- La actualizacion ideal del plan ocurre mediante webhook.
+- La sincronizacion por session_id sirve como respaldo cuando el usuario vuelve
+  desde Stripe, especialmente util en localhost.
+- En produccion el webhook sigue siendo obligatorio porque el usuario puede
+  cerrar la pestana antes de volver al sistema.
+- El actor principal de CU43 y CU44 es el Director de la escuela.
+- En el codigo el Director se valida como owner de la escuela.
+
+
+10. ERRORES COMUNES
+-------------------
+
+Error: Invalid API Key provided
+
+Causa:
+STRIPE_SECRET_KEY es falsa o no empieza con sk_test_ / sk_live_.
+
+Solucion:
+Copiar una clave valida desde Stripe Dashboard.
+
+
+Error: Error de conexion. Intenta mas tarde.
+
+Causas posibles:
+- Falta web/.env.local.
+- NEXT_PUBLIC_API_URL esta mal.
+- Backend apagado.
+- Backend no corre en el puerto 8000.
+
+Solucion:
+Revisar web/.env.local y abrir http://localhost:8000/docs.
+
+
+Pago exitoso pero plan no cambia
+
+Causas posibles:
+- Webhook local no esta corriendo.
+- STRIPE_WEBHOOK_SECRET no coincide.
+- No se reinicio el backend despues de cambiar .env.
+
+Solucion:
+Ejecutar stripe listen, copiar whsec_ correcto y reiniciar backend.
+
+Nota:
+La pantalla de exito tambien intenta sincronizar con Stripe usando session_id.
+
+
+11. ARCHIVOS RELACIONADOS
+-------------------------
+
+Backend:
+
+- server/app/modules/subscriptions/router.py
+- server/app/modules/subscriptions/services/subscription_service.py
+- server/app/modules/subscriptions/repositories/subscription_repository.py
+- server/app/modules/subscriptions/schemas/subscription_schema.py
+- server/app/core/config.py
+
+Frontend:
+
+- web/features/subscriptions/presentation/components/SubscriptionPlanCard.tsx
+- web/features/subscriptions/presentation/components/CancelSubscriptionButton.tsx
+- web/features/subscriptions/data/api/subscription-api.ts
+- web/features/subscriptions/data/repositories/subscription.repository.ts
+- web/app/(onboarding)/inicio/planes/page.tsx
+- web/app/(onboarding)/inicio/planes/success/page.tsx
+- web/app/[schoolId]/suscripciones/actual/page.tsx
+

@@ -1,5 +1,5 @@
 export type SubscriptionPlan = {
-  code: "free" | "standard" | "premium";
+  code: "free" | "professional" | "institutional";
   name: string;
   priceLabel: string;
   billingLabel: string;

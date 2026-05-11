@@ -1,6 +1,11 @@
-import Link from "next/link";
+"use client";
 
+import Link from "next/link";
+import { useTransition } from "react";
+
+import { createCheckoutSession } from "@/features/subscriptions/presentation/actions/create-checkout-session-action";
 import type { SubscriptionPlan } from "@/features/subscriptions/domain/entities/plan";
+import { appToast } from "@/features/shared/components/toast/toast";
 
 type SubscriptionPlanCardProps = {
   plan: SubscriptionPlan;
@@ -8,11 +13,30 @@ type SubscriptionPlanCardProps = {
 };
 
 export default function SubscriptionPlanCard({ plan, schoolId }: SubscriptionPlanCardProps) {
-  const actionHref = schoolId
-    ? plan.code === "free"
-      ? `/${schoolId}/inicio`
-      : `/inicio/planes?schoolId=${schoolId}&plan=${plan.code}`
-    : null;
+  const [isPending, startTransition] = useTransition();
+  const freeHref = schoolId && plan.code === "free" ? `/${schoolId}/inicio` : null;
+
+  const handlePaidPlan = () => {
+    if (!schoolId) {
+      appToast.error("Selecciona una escuela valida antes de elegir un plan.");
+      return;
+    }
+
+    if (plan.code === "free") {
+      return;
+    }
+
+    const planCode = plan.code;
+    startTransition(async () => {
+      const response = await createCheckoutSession(schoolId, planCode);
+      if (!response.ok) {
+        appToast.error(response.errors[0] ?? "No se pudo iniciar el pago.");
+        return;
+      }
+
+      window.location.assign(response.data.checkoutUrl);
+    });
+  };
 
   return (
     <article
@@ -65,13 +89,22 @@ export default function SubscriptionPlanCard({ plan, schoolId }: SubscriptionPla
         </div>
       ) : null}
 
-      {actionHref ? (
+      {freeHref ? (
         <Link
-          href={actionHref}
+          href={freeHref}
           className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-lg bg-[#1E3A5F] px-4 text-sm font-semibold text-white hover:bg-[#152B47]"
         >
-          {plan.code === "free" ? "Empezar gratis" : "Elegir plan"}
+          Empezar gratis
         </Link>
+      ) : schoolId && plan.code !== "free" ? (
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={handlePaidPlan}
+          className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-lg bg-[#1E3A5F] px-4 text-sm font-semibold text-white hover:bg-[#152B47] disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {isPending ? "Redirigiendo..." : "Elegir plan"}
+        </button>
       ) : (
         <button
           type="button"

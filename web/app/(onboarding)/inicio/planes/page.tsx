@@ -8,9 +8,9 @@ import { SUBSCRIPTION_PLAN_CATALOG } from "@/features/subscriptions/presentation
 export default async function PlansCatalogPage({
   searchParams,
 }: {
-  searchParams: Promise<{ schoolId?: string }>;
+  searchParams: Promise<{ schoolId?: string; canceled?: string }>;
 }) {
-  const { schoolId } = await searchParams;
+  const { schoolId, canceled } = await searchParams;
   const schoolsResponse = await schoolRepository.getSchoolsByUser();
 
   const schools = schoolsResponse.ok ? schoolsResponse.data : [];
@@ -26,11 +26,17 @@ export default async function PlansCatalogPage({
           </CardTitle>
           <CardDescription className="mx-auto max-w-3xl text-center text-base leading-relaxed text-slate-600">
             Elige el plan que mejor acompane el crecimiento academico de tu institucion. Podras
-            actualizar tu suscripcion cuando integremos la pasarela de pago.
+            completar el pago de forma segura con Stripe y volver al sistema cuando finalice.
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6 px-6 pb-8 pt-6 sm:px-8 md:px-10">
+          {canceled ? (
+            <div className="rounded-xl border border-[#f1d1a5] bg-[#fff9ef] p-4 text-sm text-[#8a5a16]">
+              El pago fue cancelado. Puedes elegir otro plan o volver al dashboard de tu escuela.
+            </div>
+          ) : null}
+
           {!canManagePlans ? (
             <div className="rounded-xl border border-[#f0caca] bg-[#fff8f8] p-4 text-sm text-[#9b3f3f]">
               No encontramos una escuela valida donde tengas rol de director para gestionar

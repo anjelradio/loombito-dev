@@ -12,3 +12,10 @@ export const CurrentSubscriptionResponseSchema = z.object({
 });
 
 export type CurrentSubscriptionResponseDto = z.infer<typeof CurrentSubscriptionResponseSchema>;
+
+export const CheckoutSessionResponseSchema = z.object({
+  checkout_url: z.url(),
+  session_id: z.string(),
+});
+
+export type CheckoutSessionResponseDto = z.infer<typeof CheckoutSessionResponseSchema>;

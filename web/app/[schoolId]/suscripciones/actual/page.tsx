@@ -1,6 +1,8 @@
 import SchoolPageHeader from "@/components/layout/school/SchoolPageHeader";
 import PageHeading from "@/components/shared/PageHeading";
 import { subscriptionRepository } from "@/features/subscriptions/data/repositories/subscription.repository";
+import Link from "next/link";
+import CancelSubscriptionButton from "@/features/subscriptions/presentation/components/CancelSubscriptionButton";
 import { AccentCard } from "@/features/shared/components/cards/AccentCard";
 import { ContentGridSurface } from "@/features/shared/components/layout/ContentGridSurface";
 
@@ -21,6 +23,13 @@ function formatDate(value: string | null) {
     month: "long",
     day: "2-digit",
   }).format(date);
+}
+
+function formatStatus(status: string) {
+  if (status === "active") return "Activa";
+  if (status === "canceled") return "Renovacion cancelada";
+  if (status === "past_due") return "Pago pendiente";
+  return status;
 }
 
 export default async function CurrentSubscriptionPage({
@@ -67,7 +76,7 @@ export default async function CurrentSubscriptionPage({
               </div>
               <div className="flex items-center justify-between text-sm text-[#315a85]">
                 <span className="font-medium">Estado</span>
-                <span className="capitalize">{subscription.status.replace("_", " ")}</span>
+                <span>{formatStatus(subscription.status)}</span>
               </div>
               <div className="flex items-center justify-between text-sm text-[#315a85]">
                 <span className="font-medium">Proximo corte</span>
@@ -80,8 +89,24 @@ export default async function CurrentSubscriptionPage({
             variant="softBlue"
             eyebrow="Siguiente paso"
             title="Gestion de suscripcion"
-            description="En la siguiente etapa podras mejorar, cambiar o cancelar tu plan con integracion de pagos."
-          />
+            description="Cambia de plan desde el catalogo o cancela la renovacion del plan actual."
+          >
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href={`/inicio/planes?schoolId=${schoolId}`}
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-[#1E3A5F] px-4 text-sm font-semibold text-white hover:bg-[#152B47]"
+              >
+                Cambiar plan
+              </Link>
+
+              {subscription.planCode !== "free" && subscription.status === "active" ? (
+                <CancelSubscriptionButton
+                  schoolId={schoolId}
+                  planName={subscription.planName}
+                />
+              ) : null}
+            </div>
+          </AccentCard>
         </section>
       </ContentGridSurface>
     </>

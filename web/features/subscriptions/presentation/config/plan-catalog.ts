@@ -22,7 +22,7 @@ export const SUBSCRIPTION_PLAN_CATALOG: SubscriptionPlan[] = [
     ],
   },
   {
-    code: "standard",
+    code: "professional",
     name: "Profesional",
     priceLabel: "Bs 149",
     billingLabel: "Por mes",
@@ -43,7 +43,7 @@ export const SUBSCRIPTION_PLAN_CATALOG: SubscriptionPlan[] = [
     featured: true,
   },
   {
-    code: "premium",
+    code: "institutional",
     name: "Institucional",
     priceLabel: "Bs 299",
     billingLabel: "Por mes",

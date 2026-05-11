@@ -19,6 +19,16 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = Field(..., env="REDIS_URL")
 
+    STRIPE_SECRET_KEY: str = Field(default="", env="STRIPE_SECRET_KEY")
+    STRIPE_WEBHOOK_SECRET: str = Field(default="", env="STRIPE_WEBHOOK_SECRET")
+    STRIPE_PRICE_ID_PROFESSIONAL: str = Field(
+        default="", env="STRIPE_PRICE_ID_PROFESSIONAL"
+    )
+    STRIPE_PRICE_ID_INSTITUTIONAL: str = Field(
+        default="", env="STRIPE_PRICE_ID_INSTITUTIONAL"
+    )
+    APP_BASE_URL: str = Field(default="http://localhost:3000", env="APP_BASE_URL")
+
     PROJECT_NAME: str = "LoomBo - API"
     ENVIRONMENT: str = Field(..., env="ENVIRONMENT")
 

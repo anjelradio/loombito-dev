@@ -2,7 +2,12 @@ from uuid import UUID
 
 from sqlmodel import Session, select
 
-from app.modules.subscriptions.models import Plan, PlanCode, SchoolSubscription
+from app.modules.subscriptions.models import (
+    Plan,
+    PlanCode,
+    SchoolSubscription,
+    SubscriptionPayment,
+)
 
 
 class SubscriptionRepository:
@@ -39,6 +44,13 @@ class SubscriptionRepository:
         self.db.add(current_subscription)
         return current_subscription
 
+    # Persiste cambios sobre una suscripcion existente.
+    def update_school_subscription(
+        self, school_subscription: SchoolSubscription
+    ) -> SchoolSubscription:
+        self.db.add(school_subscription)
+        return school_subscription
+
     # Persiste una suscripcion nueva para una escuela.
     def create_school_subscription(self, school_subscription: SchoolSubscription) -> SchoolSubscription:
         self.db.add(school_subscription)
@@ -57,3 +69,30 @@ class SubscriptionRepository:
             )
         )
         return self.db.exec(query).first()
+
+    # Busca una suscripcion activa por el id de suscripcion del proveedor.
+    def get_subscription_by_provider_subscription_id(
+        self, provider_subscription_id: str
+    ) -> SchoolSubscription | None:
+        query = select(SchoolSubscription).where(
+            SchoolSubscription.provider_subscription_id == provider_subscription_id,
+            SchoolSubscription.state == True,
+        )
+        return self.db.exec(query).first()
+
+    # Busca un pago registrado por factura del proveedor.
+    def get_payment_by_provider_invoice_id(
+        self, provider_invoice_id: str
+    ) -> SubscriptionPayment | None:
+        query = select(SubscriptionPayment).where(
+            SubscriptionPayment.provider_invoice_id == provider_invoice_id,
+            SubscriptionPayment.state == True,
+        )
+        return self.db.exec(query).first()
+
+    # Persiste un pago de suscripcion.
+    def create_subscription_payment(
+        self, subscription_payment: SubscriptionPayment
+    ) -> SubscriptionPayment:
+        self.db.add(subscription_payment)
+        return subscription_payment
