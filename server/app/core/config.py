@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     )
     GEMINI_TIMEOUT_SEC: int = Field(default=30, env="GEMINI_TIMEOUT_SEC")
 
+    BACKUP_STORAGE_DIR: str = Field(default="storage/backups", env="BACKUP_STORAGE_DIR")
+
     PROJECT_NAME: str = "LoomBo - API"
     ENVIRONMENT: str = Field(..., env="ENVIRONMENT")
 

@@ -5,6 +5,13 @@ from .audit_schema import (
     VerifyAuditAccessRequest,
     VerifyAuditAccessResponse,
 )
+from .backup_schema import (
+    CreateSchoolBackupResponse,
+    DeleteSchoolBackupResponse,
+    RestoreSchoolBackupPayload,
+    RestoreSchoolBackupResponse,
+    SchoolBackupRead,
+)
 
 __all__ = [
     "RequestAuditAccessResponse",
@@ -12,4 +19,9 @@ __all__ = [
     "VerifyAuditAccessResponse",
     "AuditLogRead",
     "PaginatedAuditLog",
+    "SchoolBackupRead",
+    "CreateSchoolBackupResponse",
+    "RestoreSchoolBackupPayload",
+    "RestoreSchoolBackupResponse",
+    "DeleteSchoolBackupResponse",
 ]

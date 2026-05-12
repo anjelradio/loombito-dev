@@ -1,16 +1,21 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
 from app.dependencies.auth import CurrentUser, DBSession
 from app.modules.system.models import AuditScope
 from app.modules.system.schemas import (
+    CreateSchoolBackupResponse,
+    DeleteSchoolBackupResponse,
     PaginatedAuditLog,
     RequestAuditAccessResponse,
+    RestoreSchoolBackupPayload,
+    RestoreSchoolBackupResponse,
+    SchoolBackupRead,
     VerifyAuditAccessRequest,
     VerifyAuditAccessResponse,
 )
-from app.modules.system.services import AuditService
+from app.modules.system.services import AuditService, BackupService
 
 router = APIRouter(prefix="/system", tags=["Sistema"])
 
@@ -45,3 +50,37 @@ def list_audit_logs(
         scope=AuditScope.SYSTEM if not school_id else AuditScope.SCHOOL,
         school_id=school_id,
     )
+
+
+@router.post("/backups/schools/{school_id}", response_model=CreateSchoolBackupResponse)
+def create_school_backup(school_id: UUID, db: DBSession, user: CurrentUser):
+    return BackupService(db).create_school_backup(school_id, user)
+
+
+@router.get("/backups/schools/{school_id}", response_model=list[SchoolBackupRead])
+def list_school_backups(school_id: UUID, db: DBSession, user: CurrentUser):
+    return BackupService(db).list_school_backups(school_id, user)
+
+
+@router.post(
+    "/backups/schools/{school_id}/{backup_id}/restore",
+    response_model=RestoreSchoolBackupResponse,
+)
+def restore_school_backup(
+    school_id: UUID,
+    backup_id: UUID,
+    payload: RestoreSchoolBackupPayload,
+    db: DBSession,
+    user: CurrentUser,
+): 
+    if payload.confirm_text.strip().upper() != "RESTAURAR":
+        raise HTTPException(status_code=400, detail="Texto de confirmacion invalido")
+    return BackupService(db).restore_school_backup(school_id, backup_id, user)
+
+
+@router.delete(
+    "/backups/schools/{school_id}/{backup_id}",
+    response_model=DeleteSchoolBackupResponse,
+)
+def delete_school_backup(school_id: UUID, backup_id: UUID, db: DBSession, user: CurrentUser):
+    return BackupService(db).delete_school_backup(school_id, backup_id, user)

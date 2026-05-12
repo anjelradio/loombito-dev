@@ -31,4 +31,4 @@ from app.modules.schools.models import (  # noqa: F401
 from app.modules.reports.models import ReportRun  # noqa: F401
 from app.modules.students.models import CourseStudent, Student  # noqa: F401
 from app.modules.subscriptions.models import Plan, SchoolSubscription, SubscriptionPayment  # noqa: F401
-from app.modules.system.models import AuditLog  # noqa: F401
+from app.modules.system.models import AuditLog, SchoolBackup  # noqa: F401

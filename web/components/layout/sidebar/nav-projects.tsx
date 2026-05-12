@@ -39,6 +39,15 @@ export function NavProjects({
           url: `/${schoolId}/bitacora`,
           icon: <FolderIcon />,
         },
+        ...(selectedSchool?.role === "owner"
+          ? [
+              {
+                name: "Copia de seguridad",
+                url: `/${schoolId}/copia-seguridad`,
+                icon: <FolderIcon />,
+              },
+            ]
+          : []),
         ...projects,
       ]
     : projects
