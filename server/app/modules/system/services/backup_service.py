@@ -5,6 +5,7 @@ from datetime import date, datetime
 from enum import Enum
 from pathlib import Path
 from uuid import UUID
+import uuid
 
 from fastapi import HTTPException
 import sqlalchemy as sa
@@ -53,6 +54,39 @@ class BackupService:
         if isinstance(value, Enum):
             return value.value
         return value
+
+    # Convierte valores JSON del snapshot a tipos Python esperados por la DB.
+    def _from_json_value(self, column, value):
+        if value is None:
+            return None
+
+        column_type = column.type
+        if isinstance(column_type, sa.Uuid):
+            if isinstance(value, UUID):
+                return value
+            return uuid.UUID(str(value))
+
+        if isinstance(column_type, sa.DateTime):
+            if isinstance(value, datetime):
+                return value
+            return datetime.fromisoformat(str(value))
+
+        if isinstance(column_type, sa.Date):
+            if isinstance(value, date):
+                return value
+            return date.fromisoformat(str(value))
+
+        return value
+
+    # Ajusta una fila de snapshot para insert segun tipos de columnas SQLAlchemy.
+    def _coerce_row_for_insert(self, table, row: dict) -> dict:
+        coerced = {}
+        for column in table.columns:
+            key = column.name
+            if key not in row:
+                continue
+            coerced[key] = self._from_json_value(column, row[key])
+        return coerced
 
     # Obtiene tablas incluidas en backup/restauracion por escuela.
     def _get_school_tables(self):
@@ -202,16 +236,17 @@ class BackupService:
                     continue
                 for row in rows:
                     if isinstance(row, dict):
-                        self.db.execute(table.insert().values(**row))
+                        prepared_row = self._coerce_row_for_insert(table, row)
+                        self.db.execute(table.insert().values(**prepared_row))
 
             backup.status = "restored"
             backup.restored_date = datetime.utcnow()
             self.repo.update(backup)
             self.db.commit()
             self.db.refresh(backup)
-        except Exception:
+        except Exception as exc:
             self.db.rollback()
-            raise HTTPException(status_code=500, detail="No se pudo restaurar el backup")
+            raise HTTPException(status_code=500, detail=f"No se pudo restaurar el backup: {exc}")
 
         return RestoreSchoolBackupResponse(
             backup_id=backup.id,

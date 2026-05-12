@@ -1,5 +1,5 @@
-import { apiRequestJson } from "@/features/shared/infrastructure/api/api-client";
-import type { ApiResult } from "@/features/shared/infrastructure/types/api-resource";
+import { apiRequestJson, apiRequestStatus } from "@/features/shared/infrastructure/api/api-client";
+import type { ApiActionResult, ApiResult } from "@/features/shared/infrastructure/types/api-resource";
 import type { SchoolBackup } from "@/features/system/domain/entities/school-backup";
 
 import { toCreatedSchoolBackupEntity } from "../mappers/school-backup-response.mapper";
@@ -15,6 +15,23 @@ export const schoolBackupBrowserApi = {
       fallbackMessage: "No se pudo crear la copia de seguridad.",
       responseSchema: CreateSchoolBackupResponseSchema,
       mapData: toCreatedSchoolBackupEntity,
+    });
+  },
+
+  restoreSchoolBackup(schoolId: string, backupId: string): Promise<ApiActionResult> {
+    return apiRequestStatus({
+      url: `${basePath}/${schoolId}/${backupId}/restore`,
+      method: "POST",
+      body: { confirm_text: "RESTAURAR" },
+      fallbackMessage: "No se pudo restaurar la copia de seguridad.",
+    });
+  },
+
+  deleteSchoolBackup(schoolId: string, backupId: string): Promise<ApiActionResult> {
+    return apiRequestStatus({
+      url: `${basePath}/${schoolId}/${backupId}`,
+      method: "DELETE",
+      fallbackMessage: "No se pudo eliminar la copia de seguridad.",
     });
   },
 };

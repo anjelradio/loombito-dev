@@ -6,7 +6,7 @@ import TeacherAssignmentSubjectCard from "./TeacherAssignmentSubjectCard";
 
 type TeacherAssignmentGroupsCardProps = {
   schoolId: string;
-  mode: "evaluaciones" | "asistencias" | "promedios";
+  mode: "evaluaciones" | "asistencias" | "promedios" | "clasificacion";
   groups: TeacherAssignmentContextCourseGroup[];
   basePath?: string;
 };

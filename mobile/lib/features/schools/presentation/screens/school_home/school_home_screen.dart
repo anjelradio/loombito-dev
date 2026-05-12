@@ -106,6 +106,43 @@ class _SchoolHomeScreenState extends ConsumerState<SchoolHomeScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Divider(
+                      color: const Color(0xFF9FB6CF).withValues(alpha: 0.65),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Implementaciones con ML',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: const Color(0xFF35597E),
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Divider(
+                      color: const Color(0xFF9FB6CF).withValues(alpha: 0.65),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              SchoolHomeModeActionCard(
+                schoolId: widget.schoolId,
+                mode: TeacherAssignmentMode.classification,
+                title: 'Clasificacion estudiantil',
+                description:
+                    'Segmenta estudiantes por rendimiento y asistencia con clustering.',
+                icon: Icons.psychology_alt_rounded,
+                startColor: const Color(0xFF24435E),
+                endColor: const Color(0xFF2F6F7B),
+                height: 178,
+              ),
               const SizedBox(height: 8),
               Container(
                 decoration: BoxDecoration(

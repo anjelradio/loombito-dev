@@ -71,6 +71,13 @@ export const navigationByRole = {
         { title: "Promedios", url: "docente/promedios" },
       ],
     },
+    {
+      title: "Analiticas",
+      url: "#",
+      icon: <BookAIcon />,
+      isActive: true,
+      items: [{ title: "Clasificacion", url: "docente/analiticas/clasificacion" }],
+    },
   ],
 };
 

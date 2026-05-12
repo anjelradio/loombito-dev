@@ -5,6 +5,7 @@ import 'package:mobile/features/attendance/attendance.dart';
 import 'package:mobile/features/auth/auth.dart';
 import 'package:mobile/features/evaluations/evaluations.dart';
 import 'package:mobile/features/home/home.dart';
+import 'package:mobile/features/intelligence/intelligence.dart';
 import 'package:mobile/features/introduction/tutorial.dart';
 import 'package:mobile/features/schools/schools.dart';
 
@@ -100,6 +101,17 @@ final goRouterProvider = Provider((ref) {
           final schoolId = state.pathParameters['schoolId'] ?? '';
           final assignmentId = state.pathParameters['assignmentId'] ?? '';
           return TermAveragesScreen(
+            schoolId: schoolId,
+            assignmentId: assignmentId,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/schools/:schoolId/teacher/clasificacion/:assignmentId',
+        builder: (context, state) {
+          final schoolId = state.pathParameters['schoolId'] ?? '';
+          final assignmentId = state.pathParameters['assignmentId'] ?? '';
+          return StudentClassificationScreen(
             schoolId: schoolId,
             assignmentId: assignmentId,
           );

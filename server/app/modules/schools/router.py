@@ -32,7 +32,7 @@ def list_schools(
 
 @router.post("/", response_model=SchoolRead)
 def create_school(db: DBSession, payload: SchoolCreate, actor: CurrentActor):
-    return SchoolService(db).create(payload, actor)
+    return SchoolService(db).create(payload, actor.user.id)
 
 
 @router.get("/levels", response_model=list[LevelRead])
@@ -56,7 +56,7 @@ def list_users_by_school(
     name: str | None = Query(None, min_length=1, description="Filtro por nombre"),
 ):
     return SchoolService(db).list_users_by_school(
-        school_id, actor, per_page, page, role, name
+        school_id, actor.user.id, per_page, page, role, name
     )
 
 
@@ -66,7 +66,7 @@ def list_users_by_school(
 def delete_user_from_school(
     school_id: UUID, target_user_id: UUID, db: DBSession, actor: CurrentActor
 ):
-    SchoolService(db).delete_user_from_school(school_id, actor, target_user_id)
+    SchoolService(db).delete_user_from_school(school_id, actor.user.id, target_user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -77,7 +77,7 @@ def toggle_user_role_in_school(
     school_id: UUID, target_user_id: UUID, db: DBSession, actor: CurrentActor
 ):
     return SchoolService(db).toggle_user_role_in_school(
-        school_id, actor, target_user_id
+        school_id, actor.user.id, target_user_id
     )
 
 

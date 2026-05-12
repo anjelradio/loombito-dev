@@ -197,6 +197,7 @@ class _Header extends StatelessWidget {
     final normalized = mode.title.trim().toLowerCase();
     if (normalized.contains('asistencia')) return 'Asistencias';
     if (normalized.contains('promedio')) return 'Promedios';
+    if (normalized.contains('clasific')) return 'Clasificacion';
     if (normalized.contains('evaluacion')) return 'Evaluaciones';
     return mode.title;
   }

@@ -2,6 +2,7 @@ import { AccentCard } from "@/features/shared/components/cards/AccentCard";
 import type { SchoolBackup } from "@/features/system/domain/entities/school-backup";
 
 import CreateSchoolBackupButton from "./CreateSchoolBackupButton";
+import SchoolBackupRowActions from "./SchoolBackupRowActions";
 
 type SchoolBackupsListCardProps = {
   schoolId: string;
@@ -31,6 +32,7 @@ export default function SchoolBackupsListCard({ schoolId, backups }: SchoolBacku
               <div key={backup.id} className="rounded-lg border border-[#dbe9f8] bg-white p-3 text-sm text-[#52749a]">
                 <p className="font-semibold text-[#1f4d7d]">{backup.fileName}</p>
                 <p className="mt-1 text-xs text-[#5d80a7]">{formatDate(backup.createdDate)}</p>
+                <SchoolBackupRowActions schoolId={schoolId} backupId={backup.id} fileName={backup.fileName} />
               </div>
             ))}
           </div>

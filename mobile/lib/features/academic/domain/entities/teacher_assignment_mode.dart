@@ -1,4 +1,4 @@
-enum TeacherAssignmentMode { evaluations, attendance, averages }
+enum TeacherAssignmentMode { evaluations, attendance, averages, classification }
 
 extension TeacherAssignmentModeX on TeacherAssignmentMode {
   String get routeSegment {
@@ -9,6 +9,8 @@ extension TeacherAssignmentModeX on TeacherAssignmentMode {
         return 'asistencias';
       case TeacherAssignmentMode.averages:
         return 'promedios';
+      case TeacherAssignmentMode.classification:
+        return 'clasificacion';
     }
   }
 
@@ -20,6 +22,8 @@ extension TeacherAssignmentModeX on TeacherAssignmentMode {
         return 'Asistencias';
       case TeacherAssignmentMode.averages:
         return 'Promedios';
+      case TeacherAssignmentMode.classification:
+        return 'Clasificacion';
     }
   }
 }

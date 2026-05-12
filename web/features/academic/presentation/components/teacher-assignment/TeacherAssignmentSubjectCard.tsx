@@ -5,7 +5,7 @@ import type { TeacherAssignmentContextSubject } from "@/features/academic/domain
 
 type TeacherAssignmentSubjectCardProps = {
   schoolId: string;
-  mode: "evaluaciones" | "asistencias" | "promedios";
+  mode: "evaluaciones" | "asistencias" | "promedios" | "clasificacion";
   subject: TeacherAssignmentContextSubject;
   basePath?: string;
 };
