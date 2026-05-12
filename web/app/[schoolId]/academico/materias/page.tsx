@@ -59,14 +59,25 @@ export default async function MateriasPage({
         />
 
         <section className="grid items-stretch gap-4 2xl:grid-cols-[70%_30%]">
-          <AccentCard variant="base" eyebrow="Listado" className="flex h-full flex-col p-6">
-            <SubjectSearchForm basePath={`/${schoolId}/academico/materias`} defaultSearch={search} />
+          <AccentCard
+            variant="base"
+            eyebrow="Listado"
+            className="flex h-full flex-col p-6"
+          >
+            <SubjectSearchForm
+              basePath={`/${schoolId}/academico/materias`}
+              defaultSearch={search}
+            />
 
             <ScrollArea className="h-[430px] pr-3">
               <div className="grid grid-cols-1 gap-3 pb-1 sm:grid-cols-2 xl:grid-cols-3">
                 {data.subjects.length ? (
                   data.subjects.map((subject) => (
-                    <SubjectListItemCard key={subject.id} schoolId={schoolId} subject={subject} />
+                    <SubjectListItemCard
+                      key={subject.id}
+                      schoolId={schoolId}
+                      subject={subject}
+                    />
                   ))
                 ) : (
                   <div className="col-span-full rounded-xl border border-[#d5e3f3] bg-[#f8fbff] p-4 text-sm text-[#52749a]">

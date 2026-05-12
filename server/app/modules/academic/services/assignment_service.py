@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
+from app.dependencies.auth import CurrentActorContext
 from app.modules.auth.models import User
 from app.modules.academic.models import Course
 from app.modules.academic.permissions import ensure_admin_or_owner
@@ -22,6 +23,8 @@ from app.modules.academic.schemas import (
 )
 from app.modules.schools.models import SchoolRole, SchoolUser
 from app.modules.schools.repositories import SchoolRepository, SchoolUserRepository
+from app.modules.system.models import AuditAction
+from app.modules.system.services import AuditLogger
 
 
 class AssignmentService:
@@ -30,6 +33,7 @@ class AssignmentService:
         self.assignment = AssignmentRepository(db)
         self.school = SchoolRepository(db)
         self.school_user = SchoolUserRepository(db)
+        self.audit_logger = AuditLogger(db)
 
     def _ensure_school_and_permissions(self, school_id: UUID, user_id: UUID) -> None:
         school = self.school.get(school_id)
@@ -186,9 +190,9 @@ class AssignmentService:
         school_id: UUID,
         teacher_id: UUID,
         payload: AssignmentCreate,
-        user_id: UUID,
+        actor: CurrentActorContext,
     ) -> TeacherAssignmentsRead:
-        self._ensure_school_and_permissions(school_id, user_id)
+        self._ensure_school_and_permissions(school_id, actor.user.id)
         self._ensure_teacher_in_school(school_id, teacher_id)
 
         current = self.assignment.list_active_by_teacher_and_course(
@@ -218,7 +222,14 @@ class AssignmentService:
             self.db.rollback()
             raise
 
-        return self.list_teacher_assignments(school_id, teacher_id, user_id)
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.CREATE,
+            description="Creacion de asignacion docente exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
+        return self.list_teacher_assignments(school_id, teacher_id, actor.user.id)
 
     def replace_teacher_course_subjects(
         self,
@@ -226,9 +237,9 @@ class AssignmentService:
         teacher_id: UUID,
         course_id: UUID,
         payload: AssignmentUpdate,
-        user_id: UUID,
+        actor: CurrentActorContext,
     ) -> TeacherAssignmentsRead:
-        self._ensure_school_and_permissions(school_id, user_id)
+        self._ensure_school_and_permissions(school_id, actor.user.id)
         self._ensure_teacher_in_school(school_id, teacher_id)
 
         current = self.assignment.list_active_by_teacher_and_course(school_id, teacher_id, course_id)
@@ -252,16 +263,23 @@ class AssignmentService:
             self.db.rollback()
             raise
 
-        return self.list_teacher_assignments(school_id, teacher_id, user_id)
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.UPDATE,
+            description="Actualizacion de asignacion docente exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
+        return self.list_teacher_assignments(school_id, teacher_id, actor.user.id)
 
     def delete_teacher_course_assignments(
         self,
         school_id: UUID,
         teacher_id: UUID,
         course_id: UUID,
-        user_id: UUID,
+        actor: CurrentActorContext,
     ) -> None:
-        self._ensure_school_and_permissions(school_id, user_id)
+        self._ensure_school_and_permissions(school_id, actor.user.id)
         self._ensure_teacher_in_school(school_id, teacher_id)
 
         current = self.assignment.list_active_by_teacher_and_course(school_id, teacher_id, course_id)
@@ -270,3 +288,10 @@ class AssignmentService:
 
         self.assignment.soft_delete_many(current)
         self.db.commit()
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.DELETE,
+            description="Eliminacion de asignacion docente exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )

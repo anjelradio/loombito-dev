@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
+from app.dependencies.auth import CurrentActorContext
 from app.modules.attendance.models import AttendanceRecord, AttendanceSession
 from app.modules.attendance.permissions import ensure_teacher_in_school
 from app.modules.attendance.repositories import (
@@ -24,6 +25,8 @@ from app.modules.attendance.schemas import (
     PaginatedAttendanceSession,
 )
 from app.modules.schools.repositories import SchoolRepository, SchoolUserRepository
+from app.modules.system.models import AuditAction
+from app.modules.system.services import AuditLogger
 
 
 class AttendanceService:
@@ -35,6 +38,7 @@ class AttendanceService:
         self.context_repo = AttendanceContextRepository(db)
         self.school = SchoolRepository(db)
         self.school_user = SchoolUserRepository(db)
+        self.audit_logger = AuditLogger(db)
 
     # Valida que la escuela exista.
     def _ensure_school_exists(self, school_id: UUID) -> None:
@@ -85,9 +89,11 @@ class AttendanceService:
         return [AttendanceStatusRead(id=item.id, name=item.name) for item in statuses]
 
     # Crea una sesion de asistencia para una asignacion del docente.
-    def create_session(self, school_id: UUID, payload: AttendanceSessionCreate, user_id: UUID) -> AttendanceSessionRead:
+    def create_session(
+        self, school_id: UUID, payload: AttendanceSessionCreate, actor: CurrentActorContext
+    ) -> AttendanceSessionRead:
         self._ensure_school_exists(school_id)
-        teacher_membership = ensure_teacher_in_school(self.school_user, user_id, school_id)
+        teacher_membership = ensure_teacher_in_school(self.school_user, actor.user.id, school_id)
         self._validate_teacher_assignment_access(school_id, teacher_membership.id, payload.assignment_id)
 
         term = self.context_repo.get_active_term_by_date_in_school(school_id, payload.attendance_date)
@@ -118,6 +124,13 @@ class AttendanceService:
         row = self.session_repo.get_read_row_by_id(school_id, session.id)
         if not row:
             raise HTTPException(status_code=404, detail="Sesion de asistencia no encontrada")
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.CREATE,
+            description="Creacion de sesion de asistencia exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
         return self._to_session_read(row)
 
     # Lista sesiones paginadas para una asignacion del docente.
@@ -169,13 +182,22 @@ class AttendanceService:
         return self._to_session_read(row)
 
     # Elimina logicamente una sesion y sus registros de asistencia.
-    def delete_session(self, school_id: UUID, session_id: UUID, user_id: UUID) -> None:
+    def delete_session(
+        self, school_id: UUID, session_id: UUID, actor: CurrentActorContext
+    ) -> None:
         self._ensure_school_exists(school_id)
-        teacher_membership = ensure_teacher_in_school(self.school_user, user_id, school_id)
+        teacher_membership = ensure_teacher_in_school(self.school_user, actor.user.id, school_id)
         session = self._ensure_teacher_owns_session(school_id, teacher_membership.id, session_id)
         self.record_repo.soft_delete_by_session(school_id, session.id)
         self.session_repo.delete(session)
         self.db.commit()
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.DELETE,
+            description="Eliminacion de sesion de asistencia exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
 
     # Lista estudiantes del curso con su estado de asistencia en la sesion.
     def list_gradebook_by_session(
@@ -221,10 +243,10 @@ class AttendanceService:
         session_id: UUID,
         student_id: UUID,
         payload: AttendanceRecordUpsert,
-        user_id: UUID,
+        actor: CurrentActorContext,
     ) -> AttendanceGradebookRowRead:
         self._ensure_school_exists(school_id)
-        teacher_membership = ensure_teacher_in_school(self.school_user, user_id, school_id)
+        teacher_membership = ensure_teacher_in_school(self.school_user, actor.user.id, school_id)
         session = self._ensure_teacher_owns_session(school_id, teacher_membership.id, session_id)
 
         status = self.status_repo.get_active_by_id(payload.status_id)
@@ -258,6 +280,14 @@ class AttendanceService:
         self.db.commit()
         self.db.refresh(record)
 
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.UPDATE,
+            description="Registro de asistencia actualizado exitosamente",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
+
         return AttendanceGradebookRowRead(
             student_id=student.id,
             first_name=student.first_name,
@@ -270,9 +300,11 @@ class AttendanceService:
         )
 
     # Completa faltantes con estado Falta y marca la sesion como finalizada.
-    def finalize_session(self, school_id: UUID, session_id: UUID, user_id: UUID) -> AttendanceFinalizeSummaryRead:
+    def finalize_session(
+        self, school_id: UUID, session_id: UUID, actor: CurrentActorContext
+    ) -> AttendanceFinalizeSummaryRead:
         self._ensure_school_exists(school_id)
-        teacher_membership = ensure_teacher_in_school(self.school_user, user_id, school_id)
+        teacher_membership = ensure_teacher_in_school(self.school_user, actor.user.id, school_id)
         session = self._ensure_teacher_owns_session(school_id, teacher_membership.id, session_id)
 
         absent_status = self.status_repo.get_active_by_name("Falta")
@@ -305,6 +337,14 @@ class AttendanceService:
         session.is_closed = True
         self.session_repo.update(session)
         self.db.commit()
+
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.UPDATE,
+            description="Finalizacion de sesion de asistencia exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
 
         return AttendanceFinalizeSummaryRead(
             created_missing=created_missing,

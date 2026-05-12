@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
+from app.dependencies.auth import CurrentActorContext
 from app.modules.academic.models import EvaluationWeight, Term
 from app.modules.academic.permissions import ensure_admin_or_owner
 from app.modules.academic.repositories import EvaluationWeightRepository, TermRepository
@@ -16,6 +17,8 @@ from app.modules.academic.schemas import (
     TermUpdate,
 )
 from app.modules.schools.repositories import SchoolRepository, SchoolUserRepository
+from app.modules.system.models import AuditAction
+from app.modules.system.services import AuditLogger
 
 
 class TermService:
@@ -25,6 +28,7 @@ class TermService:
         self.evaluation_weight = EvaluationWeightRepository(db)
         self.school = SchoolRepository(db)
         self.school_user = SchoolUserRepository(db)
+        self.audit_logger = AuditLogger(db)
 
     def _ensure_school_and_permissions(self, school_id: UUID, user_id: UUID) -> None:
         school = self.school.get(school_id)
@@ -37,8 +41,10 @@ class TermService:
         terms = self.term.list_active_by_school(school_id)
         return [TermRead.model_validate(term) for term in terms]
 
-    def create_term(self, school_id: UUID, payload: TermCreate, user_id: UUID) -> TermRead:
-        self._ensure_school_and_permissions(school_id, user_id)
+    def create_term(
+        self, school_id: UUID, payload: TermCreate, actor: CurrentActorContext
+    ) -> TermRead:
+        self._ensure_school_and_permissions(school_id, actor.user.id)
 
         existing_name = self.term.get_by_name_in_school(school_id, payload.name)
         if existing_name:
@@ -58,6 +64,13 @@ class TermService:
             self.term.create(term)
             self.db.commit()
             self.db.refresh(term)
+            self.audit_logger.safe_log_school_success(
+                action=AuditAction.CREATE,
+                description="Creacion de trimestre exitosa",
+                ip=actor.ip,
+                school_id=school_id,
+                actor_user_id=actor.user.id,
+            )
             return TermRead.model_validate(term)
         except IntegrityError:
             self.db.rollback()
@@ -67,9 +80,13 @@ class TermService:
             raise
 
     def update_term(
-        self, school_id: UUID, term_id: UUID, payload: TermUpdate, user_id: UUID
+        self,
+        school_id: UUID,
+        term_id: UUID,
+        payload: TermUpdate,
+        actor: CurrentActorContext,
     ) -> TermRead:
-        self._ensure_school_and_permissions(school_id, user_id)
+        self._ensure_school_and_permissions(school_id, actor.user.id)
 
         term = self.term.get_active_by_id_in_school(school_id, term_id)
         if not term:
@@ -92,6 +109,13 @@ class TermService:
             self.term.update(term)
             self.db.commit()
             self.db.refresh(term)
+            self.audit_logger.safe_log_school_success(
+                action=AuditAction.UPDATE,
+                description="Actualizacion de trimestre exitosa",
+                ip=actor.ip,
+                school_id=school_id,
+                actor_user_id=actor.user.id,
+            )
             return TermRead.model_validate(term)
         except IntegrityError:
             self.db.rollback()
@@ -100,8 +124,8 @@ class TermService:
             self.db.rollback()
             raise
 
-    def delete_term(self, school_id: UUID, term_id: UUID, user_id: UUID) -> None:
-        self._ensure_school_and_permissions(school_id, user_id)
+    def delete_term(self, school_id: UUID, term_id: UUID, actor: CurrentActorContext) -> None:
+        self._ensure_school_and_permissions(school_id, actor.user.id)
 
         term = self.term.get_active_by_id_in_school(school_id, term_id)
         if not term:
@@ -109,6 +133,13 @@ class TermService:
 
         self.term.delete(term)
         self.db.commit()
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.DELETE,
+            description="Eliminacion de trimestre exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
 
     def list_evaluation_weights(
         self, school_id: UUID, user_id: UUID
@@ -142,9 +173,9 @@ class TermService:
         school_id: UUID,
         school_level_id: UUID,
         payload: EvaluationWeightUpsert,
-        user_id: UUID,
+        actor: CurrentActorContext,
     ) -> EvaluationWeightRead:
-        self._ensure_school_and_permissions(school_id, user_id)
+        self._ensure_school_and_permissions(school_id, actor.user.id)
 
         levels = self.evaluation_weight.list_levels_with_weights(school_id)
         valid_school_level_ids = {row[0] for row in levels}
@@ -173,6 +204,13 @@ class TermService:
 
             self.db.commit()
             self.db.refresh(model)
+            self.audit_logger.safe_log_school_success(
+                action=AuditAction.UPDATE,
+                description="Guardado de ponderacion de evaluacion exitoso",
+                ip=actor.ip,
+                school_id=school_id,
+                actor_user_id=actor.user.id,
+            )
             return EvaluationWeightRead.model_validate(model)
         except IntegrityError:
             self.db.rollback()

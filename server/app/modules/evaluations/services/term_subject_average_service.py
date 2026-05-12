@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlmodel import Session
 
+from app.dependencies.auth import CurrentActorContext
 from app.modules.evaluations.models import TermSubjectAverage
 from app.modules.evaluations.permissions import ensure_admin_or_teacher_in_school
 from app.modules.evaluations.repositories import TermSubjectAverageRepository
@@ -15,6 +16,8 @@ from app.modules.evaluations.schemas import (
 )
 from app.modules.schools.models import SchoolRole
 from app.modules.schools.repositories import SchoolRepository, SchoolUserRepository
+from app.modules.system.models import AuditAction
+from app.modules.system.services import AuditLogger
 
 
 class TermSubjectAverageService:
@@ -23,6 +26,7 @@ class TermSubjectAverageService:
         self.repo = TermSubjectAverageRepository(db)
         self.school = SchoolRepository(db)
         self.school_user = SchoolUserRepository(db)
+        self.audit_logger = AuditLogger(db)
 
     # Verifica que la escuela exista.
     def _ensure_school_exists(self, school_id: UUID) -> None:
@@ -113,10 +117,10 @@ class TermSubjectAverageService:
         school_id: UUID,
         assignment_id: UUID,
         term_id: UUID,
-        user_id: UUID,
+        actor: CurrentActorContext,
     ) -> CalculateTermAverageSummaryRead:
         self._ensure_school_exists(school_id)
-        membership = self._ensure_user_access(school_id, user_id)
+        membership = self._ensure_user_access(school_id, actor.user.id)
         self._validate_assignment_access(school_id, assignment_id, membership)
         self._validate_term(school_id, term_id)
 
@@ -194,6 +198,14 @@ class TermSubjectAverageService:
             )
 
         self.db.commit()
+
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.UPDATE,
+            description="Calculo de promedios trimestrales exitoso",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
 
         return CalculateTermAverageSummaryRead(
             processed_students=len(students),

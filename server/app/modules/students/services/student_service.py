@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
+from app.dependencies.auth import CurrentActorContext
 from app.modules.academic.models import Assignment, Course, CourseSubject
 from app.modules.evaluations.models import Evaluation, EvaluationGrade
 from app.modules.schools.models import SchoolRole
@@ -25,6 +26,8 @@ from app.modules.students.schemas import (
     StudentRead,
     StudentUpdate,
 )
+from app.modules.system.models import AuditAction
+from app.modules.system.services import AuditLogger
 
 
 class StudentService:
@@ -35,6 +38,7 @@ class StudentService:
         self.evaluation_grade = EvaluationGradeRepository(db)
         self.school = SchoolRepository(db)
         self.school_user = SchoolUserRepository(db)
+        self.audit_logger = AuditLogger(db)
 
     # Verifica existencia de la escuela y permisos administrativos del usuario.
     def _ensure_school_and_permissions(self, school_id: UUID, user_id: UUID) -> None:
@@ -109,9 +113,9 @@ class StudentService:
         school_id: UUID,
         course_id: UUID,
         payload: StudentCreate,
-        user_id: UUID,
+        actor: CurrentActorContext,
     ) -> StudentRead:
-        self._ensure_school_and_permissions(school_id, user_id)
+        self._ensure_school_and_permissions(school_id, actor.user.id)
         self._ensure_course_in_school(school_id, course_id)
 
         existing = self.student.get_by_identity_in_school(
@@ -124,6 +128,13 @@ class StudentService:
             try:
                 self.course_student.create(CourseStudent(course_id=course_id, student_id=existing.id))
                 self.db.commit()
+                self.audit_logger.safe_log_school_success(
+                    action=AuditAction.CREATE,
+                    description="Vinculacion de estudiante a curso exitosa",
+                    ip=actor.ip,
+                    school_id=school_id,
+                    actor_user_id=actor.user.id,
+                )
                 return StudentRead.model_validate(existing)
             except IntegrityError:
                 self.db.rollback()
@@ -141,6 +152,13 @@ class StudentService:
             self.course_student.create(CourseStudent(course_id=course_id, student_id=student.id))
             self.db.commit()
             self.db.refresh(student)
+            self.audit_logger.safe_log_school_success(
+                action=AuditAction.CREATE,
+                description="Creacion de estudiante en curso exitosa",
+                ip=actor.ip,
+                school_id=school_id,
+                actor_user_id=actor.user.id,
+            )
             return StudentRead.model_validate(student)
         except IntegrityError:
             self.db.rollback()
@@ -151,9 +169,13 @@ class StudentService:
 
     # Actualiza los datos de un estudiante activo.
     def update(
-        self, school_id: UUID, student_id: UUID, payload: StudentUpdate, user_id: UUID
+        self,
+        school_id: UUID,
+        student_id: UUID,
+        payload: StudentUpdate,
+        actor: CurrentActorContext,
     ) -> StudentRead:
-        self._ensure_school_and_permissions(school_id, user_id)
+        self._ensure_school_and_permissions(school_id, actor.user.id)
 
         student = self.student.get_active_by_id_in_school(school_id, student_id)
         if not student:
@@ -172,6 +194,13 @@ class StudentService:
             self.student.update(student)
             self.db.commit()
             self.db.refresh(student)
+            self.audit_logger.safe_log_school_success(
+                action=AuditAction.UPDATE,
+                description="Actualizacion de estudiante exitosa",
+                ip=actor.ip,
+                school_id=school_id,
+                actor_user_id=actor.user.id,
+            )
             return StudentRead.model_validate(student)
         except IntegrityError:
             self.db.rollback()
@@ -182,9 +211,13 @@ class StudentService:
 
     # Desvincula un estudiante del curso y desactiva sus vinculaciones activas.
     def unlink_from_course(
-        self, school_id: UUID, course_id: UUID, student_id: UUID, user_id: UUID
+        self,
+        school_id: UUID,
+        course_id: UUID,
+        student_id: UUID,
+        actor: CurrentActorContext,
     ) -> None:
-        self._ensure_school_and_permissions(school_id, user_id)
+        self._ensure_school_and_permissions(school_id, actor.user.id)
         self._ensure_course_in_school(school_id, course_id)
 
         student = self.student.get_active_by_id_in_school(school_id, student_id)
@@ -198,6 +231,13 @@ class StudentService:
         self.course_student.delete_active_links_by_student(student_id)
         self.student.delete(student)
         self.db.commit()
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.DELETE,
+            description="Eliminacion de estudiante de curso exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
 
     # Lista estudiantes del curso asociado a una evaluacion para un docente.
     def list_by_evaluation_for_teacher(
@@ -310,12 +350,12 @@ class StudentService:
         evaluation_id: UUID,
         student_id: UUID,
         payload: StudentEvaluationGradeUpsert,
-        user_id: UUID,
+        actor: CurrentActorContext,
     ) -> StudentEvaluationGradeRowRead:
         evaluation, course_id = self._get_evaluation_and_course_for_teacher(
             school_id,
             evaluation_id,
-            user_id,
+            actor.user.id,
         )
 
         student = self.student.get_active_by_id_in_school(school_id, student_id)
@@ -349,6 +389,14 @@ class StudentService:
         self.db.commit()
         self.db.refresh(grade)
 
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.UPDATE,
+            description="Calificacion de evaluacion actualizada exitosamente",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
+
         return StudentEvaluationGradeRowRead(
             student_id=student.id,
             first_name=student.first_name,
@@ -364,12 +412,12 @@ class StudentService:
         self,
         school_id: UUID,
         evaluation_id: UUID,
-        user_id: UUID,
+        actor: CurrentActorContext,
     ) -> EvaluationFinalizeSummaryRead:
         evaluation, course_id = self._get_evaluation_and_course_for_teacher(
             school_id,
             evaluation_id,
-            user_id,
+            actor.user.id,
         )
 
         students = self.course_student.list_active_students_by_course_without_pagination(
@@ -397,6 +445,14 @@ class StudentService:
         evaluation.is_closed = True
         self.db.add(evaluation)
         self.db.commit()
+
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.UPDATE,
+            description="Finalizacion de evaluacion exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
 
         return EvaluationFinalizeSummaryRead(
             created_missing=created_missing,

@@ -1,7 +1,7 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobile/features/shared/widgets/custom_filled_button.dart';
+import 'package:mobile/features/shared/widgets/ui/custom_filled_button.dart';
 
 class SlideInfo {
   final String title;

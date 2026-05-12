@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from app.dependencies.auth import CurrentActorContext
 from app.modules.academic.models import Course
 from app.modules.academic.permissions import ensure_admin_or_owner
 from app.modules.academic.repositories import (
@@ -23,6 +24,8 @@ from app.modules.academic.schemas import (
 )
 from app.modules.schools.models import Level, SchoolLevel
 from app.modules.schools.repositories import SchoolRepository, SchoolUserRepository
+from app.modules.system.models import AuditAction
+from app.modules.system.services import AuditLogger
 
 
 class CourseService:
@@ -33,6 +36,7 @@ class CourseService:
         self.subject = SubjectRepository(db)
         self.school = SchoolRepository(db)
         self.school_user = SchoolUserRepository(db)
+        self.audit_logger = AuditLogger(db)
 
     def _get_school_level_option(self, school_id: UUID, school_level_id: UUID):
         query = (
@@ -121,13 +125,13 @@ class CourseService:
         )
 
     def create(
-        self, school_id: UUID, payload: CourseCreate, user_id: UUID
+        self, school_id: UUID, payload: CourseCreate, actor: CurrentActorContext
     ) -> CourseRead:
         school = self.school.get(school_id)
         if not school:
             raise HTTPException(status_code=404, detail="Escuela no encontrada")
 
-        ensure_admin_or_owner(self.school_user, user_id, school_id)
+        ensure_admin_or_owner(self.school_user, actor.user.id, school_id)
 
         school_level_row = self._get_school_level_option(
             school_id, payload.school_level_id
@@ -163,6 +167,13 @@ class CourseService:
             self.db.refresh(course)
 
             _, level_name = school_level_row
+            self.audit_logger.safe_log_school_success(
+                action=AuditAction.CREATE,
+                description="Creacion de curso exitosa",
+                ip=actor.ip,
+                school_id=school_id,
+                actor_user_id=actor.user.id,
+            )
             return self._to_course_read(course, level_name)
         except IntegrityError:
             self.db.rollback()
@@ -179,13 +190,13 @@ class CourseService:
         school_id: UUID,
         course_id: UUID,
         payload: CourseUpdate,
-        user_id: UUID,
+        actor: CurrentActorContext,
     ) -> CourseRead:
         school = self.school.get(school_id)
         if not school:
             raise HTTPException(status_code=404, detail="Escuela no encontrada")
 
-        ensure_admin_or_owner(self.school_user, user_id, school_id)
+        ensure_admin_or_owner(self.school_user, actor.user.id, school_id)
 
         course = self.course.get_active_by_id_in_school(school_id, course_id)
         if not course:
@@ -220,6 +231,13 @@ class CourseService:
             self.db.refresh(course)
 
             _, level_name = school_level_row
+            self.audit_logger.safe_log_school_success(
+                action=AuditAction.UPDATE,
+                description="Actualizacion de curso exitosa",
+                ip=actor.ip,
+                school_id=school_id,
+                actor_user_id=actor.user.id,
+            )
             return self._to_course_read(course, level_name)
         except IntegrityError:
             self.db.rollback()
@@ -231,12 +249,12 @@ class CourseService:
             self.db.rollback()
             raise
 
-    def delete(self, school_id: UUID, course_id: UUID, user_id: UUID) -> None:
+    def delete(self, school_id: UUID, course_id: UUID, actor: CurrentActorContext) -> None:
         school = self.school.get(school_id)
         if not school:
             raise HTTPException(status_code=404, detail="Escuela no encontrada")
 
-        ensure_admin_or_owner(self.school_user, user_id, school_id)
+        ensure_admin_or_owner(self.school_user, actor.user.id, school_id)
 
         course = self.course.get_active_by_id_in_school(school_id, course_id)
         if not course:
@@ -244,6 +262,13 @@ class CourseService:
 
         self.course.delete(course)
         self.db.commit()
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.DELETE,
+            description="Eliminacion de curso exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
 
     def list_by_school(
         self,

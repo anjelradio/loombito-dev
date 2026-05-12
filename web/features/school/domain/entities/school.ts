@@ -9,3 +9,13 @@ export type School = {
   phone: string;
   role?: SchoolRole;
 };
+
+export type SchoolDirectoryList = {
+  schools: School[];
+  page: number;
+  perPage: number;
+  total: number;
+  totalPages: number;
+  hasPrev: boolean;
+  hasNext: boolean;
+};

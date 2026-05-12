@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
+from app.dependencies.auth import CurrentActorContext
 from app.modules.academic.models import Subject
 from app.modules.academic.permissions import ensure_admin_or_owner
 from app.modules.academic.repositories import SubjectRepository
@@ -15,6 +16,8 @@ from app.modules.academic.schemas import (
     SubjectUpdate,
 )
 from app.modules.schools.repositories import SchoolRepository, SchoolUserRepository
+from app.modules.system.models import AuditAction
+from app.modules.system.services import AuditLogger
 
 
 class SubjectService:
@@ -23,13 +26,16 @@ class SubjectService:
         self.subject = SubjectRepository(db)
         self.school = SchoolRepository(db)
         self.school_user = SchoolUserRepository(db)
+        self.audit_logger = AuditLogger(db)
 
-    def create(self, school_id: UUID, payload: SubjectCreate, user_id: UUID) -> SubjectRead:
+    def create(
+        self, school_id: UUID, payload: SubjectCreate, actor: CurrentActorContext
+    ) -> SubjectRead:
         school = self.school.get(school_id)
         if not school:
             raise HTTPException(status_code=404, detail="Escuela no encontrada")
 
-        ensure_admin_or_owner(self.school_user, user_id, school_id)
+        ensure_admin_or_owner(self.school_user, actor.user.id, school_id)
 
         if self.subject.get_by_name_in_school(school_id, payload.name):
             raise HTTPException(
@@ -42,6 +48,13 @@ class SubjectService:
             self.subject.create(subject)
             self.db.commit()
             self.db.refresh(subject)
+            self.audit_logger.safe_log_school_success(
+                action=AuditAction.CREATE,
+                description="Creacion de materia exitosa",
+                ip=actor.ip,
+                school_id=school_id,
+                actor_user_id=actor.user.id,
+            )
             return SubjectRead.model_validate(subject)
         except IntegrityError:
             self.db.rollback()
@@ -96,13 +109,13 @@ class SubjectService:
         school_id: UUID,
         subject_id: UUID,
         payload: SubjectUpdate,
-        user_id: UUID,
+        actor: CurrentActorContext,
     ) -> SubjectRead:
         school = self.school.get(school_id)
         if not school:
             raise HTTPException(status_code=404, detail="Escuela no encontrada")
 
-        ensure_admin_or_owner(self.school_user, user_id, school_id)
+        ensure_admin_or_owner(self.school_user, actor.user.id, school_id)
 
         subject = self.subject.get_active_by_id_in_school(school_id, subject_id)
         if not subject:
@@ -120,6 +133,13 @@ class SubjectService:
             self.subject.update(subject)
             self.db.commit()
             self.db.refresh(subject)
+            self.audit_logger.safe_log_school_success(
+                action=AuditAction.UPDATE,
+                description="Actualizacion de materia exitosa",
+                ip=actor.ip,
+                school_id=school_id,
+                actor_user_id=actor.user.id,
+            )
             return SubjectRead.model_validate(subject)
         except IntegrityError:
             self.db.rollback()
@@ -131,12 +151,12 @@ class SubjectService:
             self.db.rollback()
             raise
 
-    def delete(self, school_id: UUID, subject_id: UUID, user_id: UUID) -> None:
+    def delete(self, school_id: UUID, subject_id: UUID, actor: CurrentActorContext) -> None:
         school = self.school.get(school_id)
         if not school:
             raise HTTPException(status_code=404, detail="Escuela no encontrada")
 
-        ensure_admin_or_owner(self.school_user, user_id, school_id)
+        ensure_admin_or_owner(self.school_user, actor.user.id, school_id)
 
         subject = self.subject.get_active_by_id_in_school(school_id, subject_id)
         if not subject:
@@ -144,3 +164,10 @@ class SubjectService:
 
         self.subject.delete(subject)
         self.db.commit()
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.DELETE,
+            description="Eliminacion de materia exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )

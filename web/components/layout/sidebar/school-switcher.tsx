@@ -23,8 +23,26 @@ import Link from "next/link";
 
 export function SchoolSwitcher({ schools }: { schools: School[] }) {
   const router = useRouter();
-  const { selectedSchool, setSelectedSchool } = useAppStore();
+  const { selectedSchool, setSelectedSchool, user } = useAppStore();
   const { isMobile } = useSidebar();
+
+  if (user?.isSuperAdmin) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            size="lg"
+            className="rounded-xl border border-[#2E567E]/60 bg-[#163554] text-[#EAF2FF]"
+          >
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-medium">Panel de administracion</span>
+              <span className="truncate text-xs">Superadministrador</span>
+            </div>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
 
   const schoolTypeLabel =
     selectedSchool?.type === "private"

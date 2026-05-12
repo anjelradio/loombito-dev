@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/config/router/app_router_notifier.dart';
+import 'package:mobile/features/attendance/attendance.dart';
 import 'package:mobile/features/auth/auth.dart';
+import 'package:mobile/features/evaluations/evaluations.dart';
+import 'package:mobile/features/home/home.dart';
 import 'package:mobile/features/introduction/tutorial.dart';
-import 'package:mobile/features/main/main.dart';
-import 'package:mobile/features/profile/profile.dart';
+import 'package:mobile/features/schools/schools.dart';
 
 final goRouterProvider = Provider((ref) {
   final goRouterNotifier = ref.read(goRouterNotifierProvider);
@@ -19,7 +21,7 @@ final goRouterProvider = Provider((ref) {
       ),
 
       // Home placeholder
-      GoRoute(path: '/', builder: (context, state) => const MainScreen()),
+      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
 
       // Introduction
       GoRoute(
@@ -41,6 +43,68 @@ final goRouterProvider = Provider((ref) {
         path: '/join/school-code',
         builder: (context, state) => const JoinSchoolCodeScreen(),
       ),
+      GoRoute(
+        path: '/schools/:schoolId/home',
+        builder: (context, state) {
+          final schoolId = state.pathParameters['schoolId'] ?? '';
+          return SchoolHomeScreen(schoolId: schoolId);
+        },
+      ),
+      GoRoute(
+        path: '/schools/:schoolId/teacher/evaluaciones/:assignmentId',
+        builder: (context, state) {
+          final schoolId = state.pathParameters['schoolId'] ?? '';
+          final assignmentId = state.pathParameters['assignmentId'] ?? '';
+          return AssignmentEvaluationsScreen(
+            schoolId: schoolId,
+            assignmentId: assignmentId,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/schools/:schoolId/teacher/evaluar/:evaluationId',
+        builder: (context, state) {
+          final schoolId = state.pathParameters['schoolId'] ?? '';
+          final evaluationId = state.pathParameters['evaluationId'] ?? '';
+          return EvaluateEvaluationScreen(
+            schoolId: schoolId,
+            evaluationId: evaluationId,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/schools/:schoolId/teacher/asistencias/:assignmentId',
+        builder: (context, state) {
+          final schoolId = state.pathParameters['schoolId'] ?? '';
+          final assignmentId = state.pathParameters['assignmentId'] ?? '';
+          return AssignmentAttendanceScreen(
+            schoolId: schoolId,
+            assignmentId: assignmentId,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/schools/:schoolId/teacher/asistir/:sessionId',
+        builder: (context, state) {
+          final schoolId = state.pathParameters['schoolId'] ?? '';
+          final sessionId = state.pathParameters['sessionId'] ?? '';
+          return AttendanceSessionDetailScreen(
+            schoolId: schoolId,
+            sessionId: sessionId,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/schools/:schoolId/teacher/promedios/:assignmentId',
+        builder: (context, state) {
+          final schoolId = state.pathParameters['schoolId'] ?? '';
+          final assignmentId = state.pathParameters['assignmentId'] ?? '';
+          return TermAveragesScreen(
+            schoolId: schoolId,
+            assignmentId: assignmentId,
+          );
+        },
+      ),
     ],
     redirect: (context, state) {
       final isGoingTo = state.matchedLocation;
@@ -56,7 +120,7 @@ final goRouterProvider = Provider((ref) {
             isGoingTo == '/introduction') {
           return null;
         }
-        return '/introduction';
+        return '/login';
       }
 
       if (authStatus == AuthStatus.authenticated) {

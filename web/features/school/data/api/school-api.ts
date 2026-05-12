@@ -5,7 +5,7 @@ import {
   ApiResult,
 } from "@/features/shared/infrastructure/types/api-resource";
 import type { Level } from "../../domain/entities/level";
-import type { School } from "../../domain/entities/school";
+import type { School, SchoolDirectoryList } from "../../domain/entities/school";
 import {
   errorResult,
 } from "@/features/shared/infrastructure/errors/api-error-result";
@@ -18,6 +18,7 @@ import { parseWithSchema } from "@/features/shared/infrastructure/api/parse-with
 import {
   LevelResponseListSchema,
   SchoolCreateSchema,
+  SchoolDirectoryResponseSchema,
   SchoolJoinByCodeSchema,
   SchoolResponseListSchema,
   SchoolResponseSchema,
@@ -25,6 +26,7 @@ import {
 import {
   toLevelEntityList,
   toSchoolCreateRequestDto,
+  toSchoolDirectoryEntity,
   toSchoolJoinByCodeRequestDto,
   toSchoolEntity,
   toSchoolEntityList,
@@ -47,6 +49,27 @@ export const schoolApi = {
       fallbackMessage: "No se pudieron obtener las escuelas.",
       responseSchema: SchoolResponseListSchema,
       mapData: toSchoolEntityList,
+    });
+  },
+
+  async getSchools(page = 1, perPage = 8): Promise<ApiResult<SchoolDirectoryList>> {
+    const token = await getToken();
+    if (!token) {
+      return errorResult("No autorizado");
+    }
+
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("per_page", String(perPage));
+
+    return apiRequestJson({
+      url: `${baseUrl}/?${params.toString()}`,
+      method: "GET",
+      token,
+      cache: "no-store",
+      fallbackMessage: "No se pudieron obtener los colegios.",
+      responseSchema: SchoolDirectoryResponseSchema,
+      mapData: toSchoolDirectoryEntity,
     });
   },
 

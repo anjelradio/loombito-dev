@@ -45,7 +45,11 @@ export default async function BuscarAdministradoresPage({
         />
 
         <section>
-          <AccentCard variant="base" eyebrow="Listado" className="flex h-full flex-col p-6">
+          <AccentCard
+            variant="base"
+            eyebrow="Listado"
+            className="flex h-full flex-col p-6"
+          >
             <UsersSearchRedirectForm basePath={searchPath} query={query} />
 
             <ScrollArea className="h-[400px] pr-3">

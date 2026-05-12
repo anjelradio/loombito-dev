@@ -9,27 +9,8 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import {
-  TerminalSquareIcon,
-  BotIcon,
-  BookOpenIcon,
-  Settings2Icon,
-  LifeBuoyIcon,
-  SendIcon,
-  FrameIcon,
-  PieChartIcon,
-  MapIcon,
-  TerminalIcon,
-  GalleryVerticalEndIcon,
-  AudioLinesIcon,
-  School,
-  Users,
-  School2,
-} from "lucide-react";
+import { FrameIcon, LifeBuoyIcon, MapIcon, PieChartIcon, SendIcon } from "lucide-react";
 import { SchoolSwitcher } from "./school-switcher";
 import { schoolRepository } from "@/features/school/data/repositories/school.repository";
 

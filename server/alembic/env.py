@@ -6,31 +6,7 @@ from sqlalchemy import create_engine, engine_from_config, pool
 from sqlmodel import SQLModel
 
 from alembic import context
-from app.modules.academic.models import (
-    Assignment,
-    Course,
-    CourseSubject,
-    EvaluationWeight,
-    Subject,
-    Term,
-)
-from app.modules.attendance.models import AttendanceRecord, AttendanceSession, AttendanceStatus
-from app.modules.auth.models import User
-from app.modules.evaluations.models import (
-    Evaluation,
-    EvaluationGrade,
-    EvaluationType,
-    TermSubjectAverage,
-)
-from app.modules.subscriptions.models import Plan, SchoolSubscription, SubscriptionPayment
-from app.modules.schools.models import (
-    Level,
-    School,
-    SchoolInvite,
-    SchoolLevel,
-    SchoolUser,
-)
-from app.modules.students.models import CourseStudent, Student
+from app.core import models_registry  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -63,6 +39,10 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 target_metadata = SQLModel.metadata
 
+
+def _is_sqlite_url(url: str | None) -> bool:
+    return bool(url) and url.startswith("sqlite")
+
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
@@ -87,7 +67,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         compare_type=True,
-        compare_server_default=True,
+        compare_server_default=not _is_sqlite_url(url),
         dialect_opts={"paramstyle": "named"},
     )
 
@@ -105,11 +85,12 @@ def run_migrations_online() -> None:
     connectable = create_engine(DATABASE_URL, poolclass=pool.NullPool, future=True)
 
     with connectable.connect() as connection:
+        is_sqlite = connection.dialect.name == "sqlite"
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
-            compare_server_default=True,
+            compare_server_default=not is_sqlite,
         )
 
         with context.begin_transaction():

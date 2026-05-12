@@ -16,6 +16,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useAppStore } from "@/features/shared/presentation/store/app-store"
 import { MoreHorizontalIcon, FolderIcon, ShareIcon, Trash2Icon } from "lucide-react"
 
 export function NavProjects({
@@ -28,12 +29,25 @@ export function NavProjects({
   }[]
 }) {
   const { isMobile } = useSidebar()
+  const selectedSchool = useAppStore((s) => s.selectedSchool)
+  const schoolId = selectedSchool?.id
+
+  const items = schoolId
+    ? [
+        {
+          name: "Bitacora",
+          url: `/${schoolId}/bitacora`,
+          icon: <FolderIcon />,
+        },
+        ...projects,
+      ]
+    : projects
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>Projects</SidebarGroupLabel>
       <SidebarMenu>
-        {projects.map((item) => (
+        {items.map((item) => (
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton asChild>
               <a href={item.url}>
@@ -74,13 +88,14 @@ export function NavProjects({
             </DropdownMenu>
           </SidebarMenuItem>
         ))}
-        <SidebarMenuItem>
-          <SidebarMenuButton>
-            <MoreHorizontalIcon
-            />
-            <span>More</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+        {!items.length ? (
+          <SidebarMenuItem>
+            <SidebarMenuButton>
+              <MoreHorizontalIcon />
+              <span>Sin registros</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ) : null}
       </SidebarMenu>
     </SidebarGroup>
   )

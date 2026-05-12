@@ -1,0 +1,60 @@
+from app.modules.reports.models import ReportFormat, ReportType
+
+REPORT_CATALOG = [
+    {
+        "report_type": ReportType.ATTENDANCE,
+        "label": "Reporte de asistencia",
+        "allowed_filters": [
+            "assignment_id",
+            "from_date",
+            "to_date",
+            "mode",
+            "student_last_name",
+            "student_first_name",
+            "attendance_status_filter",
+        ],
+        "allowed_columns": [
+            "student_last_name",
+            "student_first_name",
+            "attendance_date",
+            "status_name",
+            "observation",
+        ],
+        "allowed_formats": [ReportFormat.XLSX, ReportFormat.PDF],
+    },
+    {
+        "report_type": ReportType.EVALUATION_GRADEBOOK,
+        "label": "Reporte de calificaciones por evaluacion",
+        "allowed_filters": ["evaluation_id"],
+        "allowed_columns": [
+            "student_last_name",
+            "student_first_name",
+            "score",
+            "status",
+            "evaluation_name",
+            "term_name",
+            "course_name",
+            "subject_name",
+        ],
+        "allowed_formats": [ReportFormat.XLSX, ReportFormat.PDF],
+    },
+    {
+        "report_type": ReportType.TERM_AVERAGE,
+        "label": "Reporte de promedios trimestrales",
+        "allowed_filters": ["assignment_id", "term_id"],
+        "allowed_columns": [
+            "student_last_name",
+            "student_first_name",
+            "saber_score",
+            "hacer_score",
+            "ser_score",
+            "autoevaluacion_score",
+            "final_score",
+            "status",
+            "term_name",
+            "course_name",
+            "subject_name",
+        ],
+        "allowed_formats": [ReportFormat.XLSX, ReportFormat.PDF],
+    },
+]

@@ -13,7 +13,8 @@ export default async function InvitationUsersPage({
 }) {
   const { schoolId } = await params;
   const response = await invitationRepository.getSchoolInvitations(schoolId);
-  const invitations = response.ok && "data" in response && response.data ? response.data : [];
+  const invitations =
+    response.ok && "data" in response && response.data ? response.data : [];
 
   return (
     <>

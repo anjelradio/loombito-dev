@@ -1,6 +1,10 @@
 import { schoolApi } from "../api/school-api";
 
 export const schoolRepository = {
+  getSchools(page?: number, perPage?: number) {
+    return schoolApi.getSchools(page, perPage);
+  },
+
   getSchoolsByUser() {
     return schoolApi.getSchoolsByUser();
   },

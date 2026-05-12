@@ -15,6 +15,18 @@ const academicNavigation = {
   ],
 };
 
+const reportsNavigation = {
+  title: "Reportes",
+  url: "#",
+  icon: <BookAIcon />,
+  isActive: true,
+  items: [
+    { title: "Asistencias", url: "academico/reportes/asistencias" },
+    { title: "Evaluaciones", url: "academico/reportes/evaluaciones" },
+    { title: "Promedios", url: "academico/reportes/promedios" },
+  ],
+};
+
 export const navigationByRole = {
   owner: [
     {
@@ -39,10 +51,12 @@ export const navigationByRole = {
       ],
     },
     academicNavigation,
+    reportsNavigation,
   ],
 
   admin: [
     academicNavigation,
+    reportsNavigation,
   ],
 
   teacher: [
@@ -59,3 +73,17 @@ export const navigationByRole = {
     },
   ],
 };
+
+export const navigationForSuperAdmin = [
+  {
+    title: "Administracion",
+    url: "#",
+    icon: <School />,
+    isActive: true,
+    items: [
+      { title: "Dashboard", url: "administracion" },
+      { title: "Gestion de colegios", url: "administracion/colegios" },
+      { title: "Bitacora del sistema", url: "administracion/bitacora" },
+    ],
+  },
+];

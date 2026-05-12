@@ -1,7 +1,8 @@
+from dataclasses import dataclass
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session
 
@@ -42,3 +43,36 @@ def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+@dataclass
+class RequestActor:
+    ip: str
+    user_agent: str | None
+
+
+def get_request_actor(request: Request) -> RequestActor:
+    ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent")
+    return RequestActor(ip=ip, user_agent=user_agent)
+
+
+CurrentRequestActor = Annotated[RequestActor, Depends(get_request_actor)]
+
+
+@dataclass
+class CurrentActorContext:
+    user: User
+    ip: str
+    user_agent: str | None
+
+
+def get_current_actor(user: CurrentUser, request_actor: CurrentRequestActor) -> CurrentActorContext:
+    return CurrentActorContext(
+        user=user,
+        ip=request_actor.ip,
+        user_agent=request_actor.user_agent,
+    )
+
+
+CurrentActor = Annotated[CurrentActorContext, Depends(get_current_actor)]

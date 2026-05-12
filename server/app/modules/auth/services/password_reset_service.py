@@ -10,7 +10,7 @@ from app.core.otp import generate_otp, hash_otp
 from app.core.redis import redis_client
 from app.core.security import hash_password
 from app.core.validators import validate_password_policy
-from app.dependencies.auth import DBSession
+from app.dependencies.auth import DBSession, RequestActor
 from app.modules.auth.repositories import UserRepository
 from app.modules.auth.schemas import (
     RequestPasswordResetOtpRequest,
@@ -18,6 +18,8 @@ from app.modules.auth.schemas import (
     VerifyPasswordResetOtpRequest,
     VerifyPasswordResetOtpResponse,
 )
+from app.modules.system.models import AuditAction
+from app.modules.system.services import AuditLogger
 
 secure_random = SystemRandom()
 
@@ -25,6 +27,7 @@ secure_random = SystemRandom()
 class PasswordResetService:
     def __init__(self, db: DBSession):
         self.repo = UserRepository(db)
+        self.audit_logger = AuditLogger(db)
 
     def _generate_temporary_password(self, length: int = 10) -> str:
         generated = [choice(string.ascii_uppercase) for _ in range(2)]
@@ -38,7 +41,9 @@ class PasswordResetService:
         return "".join(generated)
 
     async def request_password_reset_otp(
-        self, payload: RequestPasswordResetOtpRequest
+        self,
+        payload: RequestPasswordResetOtpRequest,
+        actor: RequestActor,
     ) -> RequestPasswordResetOtpResponse:
         email = str(payload.email).strip().lower()
         user = self.repo.get_by_email(email)
@@ -82,13 +87,22 @@ class PasswordResetService:
 
         redis_client.set(cooldown_key, "1", ex=settings.OTP_RESEND_COOLDOWN_SEC)
 
-        return RequestPasswordResetOtpResponse(
+        result = RequestPasswordResetOtpResponse(
             message="Si el correo existe, se envio un codigo OTP",
             expires_in_seconds=otp_ttl_seconds,
         )
+        self.audit_logger.safe_log_system_success(
+            action=AuditAction.ACCESS,
+            description="Solicitud exitosa de OTP para recuperacion de contraseña",
+            ip=actor.ip,
+            actor_user_id=user.id if user else None,
+        )
+        return result
 
     async def verify_password_reset_otp(
-        self, payload: VerifyPasswordResetOtpRequest
+        self,
+        payload: VerifyPasswordResetOtpRequest,
+        actor: RequestActor,
     ) -> VerifyPasswordResetOtpResponse:
         email = str(payload.email).strip().lower()
         user = self.repo.get_by_email(email)
@@ -154,6 +168,13 @@ class PasswordResetService:
         user.hashed_password = hash_password(temporary_password)
         self.repo.update(user)
 
-        return VerifyPasswordResetOtpResponse(
+        result = VerifyPasswordResetOtpResponse(
             message="Se envio una nueva contraseña a tu correo"
         )
+        self.audit_logger.safe_log_system_success(
+            action=AuditAction.UPDATE,
+            description="Restablecimiento exitoso de contraseña con OTP",
+            ip=actor.ip,
+            actor_user_id=user.id,
+        )
+        return result

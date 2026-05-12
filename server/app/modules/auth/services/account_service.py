@@ -14,7 +14,7 @@ from app.core.security import (
     verify_password,
 )
 from app.core.validators import validate_password_policy
-from app.dependencies.auth import DBSession
+from app.dependencies.auth import CurrentActorContext, DBSession
 from app.modules.auth.repositories import UserRepository
 from app.modules.auth.schemas import (
     RequestEmailOtpResponse,
@@ -24,30 +24,42 @@ from app.modules.auth.schemas import (
     VerifyEmailOtpRequest,
     VerifyEmailOtpResponse,
 )
+from app.modules.system.models import AuditAction
+from app.modules.system.services import AuditLogger
 
 
 class AccountService:
     def __init__(self, db: DBSession):
         self.repo = UserRepository(db)
+        self.audit_logger = AuditLogger(db)
 
-    def update_profile(self, user_id: UUID, payload: UserProfileUpdate):
-        user = self.repo.get_by_id(user_id)
+    def update_profile(self, actor: CurrentActorContext, payload: UserProfileUpdate):
+        user = self.repo.get_by_id(actor.user.id)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
         user.first_name = payload.first_name
         user.last_name = payload.last_name
 
-        return self.repo.update(user)
+        updated_user = self.repo.update(user)
+        self.audit_logger.safe_log_system_success(
+            action=AuditAction.UPDATE,
+            description="Actualizacion exitosa de perfil",
+            ip=actor.ip,
+            actor_user_id=actor.user.id,
+        )
+        return updated_user
 
-    async def request_email_change_otp(self, user_id: UUID) -> RequestEmailOtpResponse:
-        user = self.repo.get_by_id(user_id)
+    async def request_email_change_otp(
+        self, actor: CurrentActorContext
+    ) -> RequestEmailOtpResponse:
+        user = self.repo.get_by_id(actor.user.id)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-        otp_key = f"email_change_otp:{user_id}"
-        attempts_key = f"email_change_otp_attempts:{user_id}"
-        cooldown_key = f"email_change_otp_cooldown:{user_id}"
+        otp_key = f"email_change_otp:{actor.user.id}"
+        attempts_key = f"email_change_otp_attempts:{actor.user.id}"
+        cooldown_key = f"email_change_otp_cooldown:{actor.user.id}"
 
         ttl = redis_client.ttl(cooldown_key)
         if ttl and ttl > 0:
@@ -79,21 +91,28 @@ class AccountService:
         redis_client.set(attempts_key, "0", ex=otp_ttl_seconds)
         redis_client.set(cooldown_key, "1", ex=settings.OTP_RESEND_COOLDOWN_SEC)
 
-        return RequestEmailOtpResponse(
+        result = RequestEmailOtpResponse(
             message="Se envio un codigo OTP a tu correo actual",
             expires_in_seconds=otp_ttl_seconds,
         )
+        self.audit_logger.safe_log_system_success(
+            action=AuditAction.ACCESS,
+            description="Solicitud exitosa de OTP para cambio de correo",
+            ip=actor.ip,
+            actor_user_id=actor.user.id,
+        )
+        return result
 
     def verify_email_change_otp(
-        self, user_id: UUID, payload: VerifyEmailOtpRequest
+        self, actor: CurrentActorContext, payload: VerifyEmailOtpRequest
     ) -> VerifyEmailOtpResponse:
-        user = self.repo.get_by_id(user_id)
+        user = self.repo.get_by_id(actor.user.id)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-        otp_key = f"email_change_otp:{user_id}"
-        attempts_key = f"email_change_otp_attempts:{user_id}"
-        cooldown_key = f"email_change_otp_cooldown:{user_id}"
+        otp_key = f"email_change_otp:{actor.user.id}"
+        attempts_key = f"email_change_otp_attempts:{actor.user.id}"
+        cooldown_key = f"email_change_otp_cooldown:{actor.user.id}"
 
         stored_otp_hash = redis_client.get(otp_key)
         if not stored_otp_hash:
@@ -132,20 +151,27 @@ class AccountService:
         token_ttl_seconds = settings.OTP_EXPIRES_MIN * 60
         email_change_token = create_access_token(
             {
-                "sub": str(user_id),
+                "sub": str(actor.user.id),
                 "purpose": "change_email",
             },
             minutes=settings.OTP_EXPIRES_MIN,
         )
 
-        return VerifyEmailOtpResponse(
+        result = VerifyEmailOtpResponse(
             message="Codigo OTP verificado correctamente",
             email_change_token=email_change_token,
             expires_in_seconds=token_ttl_seconds,
         )
+        self.audit_logger.safe_log_system_success(
+            action=AuditAction.ACCESS,
+            description="Verificacion exitosa de OTP para cambio de correo",
+            ip=actor.ip,
+            actor_user_id=actor.user.id,
+        )
+        return result
 
-    def update_email(self, user_id: UUID, payload: UpdateEmailRequest):
-        user = self.repo.get_by_id(user_id)
+    def update_email(self, actor: CurrentActorContext, payload: UpdateEmailRequest):
+        user = self.repo.get_by_id(actor.user.id)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
@@ -156,7 +182,7 @@ class AccountService:
         except Exception:
             raise HTTPException(status_code=401, detail="Token de verificacion invalido")
 
-        if token_purpose != "change_email" or token_user_id != user_id:
+        if token_purpose != "change_email" or token_user_id != actor.user.id:
             raise HTTPException(status_code=403, detail="Token de verificacion invalido")
 
         new_email = str(payload.new_email).strip().lower()
@@ -171,10 +197,19 @@ class AccountService:
             raise HTTPException(status_code=409, detail="El correo ya esta en uso")
 
         user.email = new_email
-        return self.repo.update(user)
+        updated_user = self.repo.update(user)
+        self.audit_logger.safe_log_system_success(
+            action=AuditAction.UPDATE,
+            description="Actualizacion exitosa de correo",
+            ip=actor.ip,
+            actor_user_id=actor.user.id,
+        )
+        return updated_user
 
-    def update_password(self, user_id: UUID, payload: UpdatePasswordRequest) -> None:
-        user = self.repo.get_by_id(user_id)
+    def update_password(
+        self, actor: CurrentActorContext, payload: UpdatePasswordRequest
+    ) -> None:
+        user = self.repo.get_by_id(actor.user.id)
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
@@ -197,3 +232,9 @@ class AccountService:
 
         user.hashed_password = hash_password(payload.new_password)
         self.repo.update(user)
+        self.audit_logger.safe_log_system_success(
+            action=AuditAction.UPDATE,
+            description="Actualizacion exitosa de contraseña",
+            ip=actor.ip,
+            actor_user_id=actor.user.id,
+        )

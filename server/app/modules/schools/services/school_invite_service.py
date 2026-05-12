@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
+from app.dependencies.auth import CurrentActorContext
 from app.modules.schools.models import InviteRole, SchoolInvite, SchoolRole, SchoolUser
 from app.modules.schools.permissions import ensure_owner
 from app.modules.schools.repositories import (
@@ -21,6 +22,8 @@ from app.modules.schools.schemas import (
     SchoolJoinByCode,
     SchoolWithRole,
 )
+from app.modules.system.models import AuditAction
+from app.modules.system.services import AuditLogger
 
 
 class SchoolInviteService:
@@ -29,6 +32,7 @@ class SchoolInviteService:
         self.school = SchoolRepository(db)
         self.school_user = SchoolUserRepository(db)
         self.invite = SchoolInviteRepository(db)
+        self.audit_logger = AuditLogger(db)
 
     def _generate_unique_code(self, role: InviteRole) -> str:
         alphabet = ascii_uppercase + digits
@@ -64,12 +68,12 @@ class SchoolInviteService:
             status=status,
         )
 
-    def create(self, school_id: UUID, payload: SchoolInviteCreate, user_id: UUID):
+    def create(self, school_id: UUID, payload: SchoolInviteCreate, actor: CurrentActorContext):
         school = self.school.get(school_id)
         if not school:
             raise HTTPException(status_code=404, detail="Escuela no encontrada")
 
-        ensure_owner(self.school_user, user_id, school_id)
+        ensure_owner(self.school_user, actor.user.id, school_id)
 
         if self._is_expired(payload.expires_at):
             raise HTTPException(
@@ -96,6 +100,13 @@ class SchoolInviteService:
                 self.db.flush()
                 self.db.commit()
                 self.db.refresh(new_invite)
+                self.audit_logger.safe_log_school_success(
+                    action=AuditAction.INVITE,
+                    description="Creacion de invitacion de escuela exitosa",
+                    ip=actor.ip,
+                    school_id=school_id,
+                    actor_user_id=actor.user.id,
+                )
                 return self._to_read(new_invite)
             except IntegrityError:
                 self.db.rollback()
@@ -105,22 +116,22 @@ class SchoolInviteService:
             detail="No se pudo generar un codigo unico",
         )
 
-    def list_by_school(self, school_id: UUID, user_id: UUID) -> list[SchoolInviteRead]:
+    def list_by_school(self, school_id: UUID, actor: CurrentActorContext) -> list[SchoolInviteRead]:
         school = self.school.get(school_id)
         if not school:
             raise HTTPException(status_code=404, detail="Escuela no encontrada")
 
-        ensure_owner(self.school_user, user_id, school_id)
+        ensure_owner(self.school_user, actor.user.id, school_id)
 
         invites = self.invite.list_active_by_school(school_id)
         return [self._to_read(invite) for invite in invites]
 
-    def delete(self, school_id: UUID, invite_id: UUID, user_id: UUID) -> None:
+    def delete(self, school_id: UUID, invite_id: UUID, actor: CurrentActorContext) -> None:
         school = self.school.get(school_id)
         if not school:
             raise HTTPException(status_code=404, detail="Escuela no encontrada")
 
-        ensure_owner(self.school_user, user_id, school_id)
+        ensure_owner(self.school_user, actor.user.id, school_id)
 
         invite = self.invite.get_active_by_id(invite_id)
         if not invite or invite.school_id != school_id:
@@ -128,8 +139,15 @@ class SchoolInviteService:
 
         self.invite.delete(invite)
         self.db.commit()
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.DELETE,
+            description="Eliminacion de invitacion de escuela exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
 
-    def join_by_code(self, payload: SchoolJoinByCode, user_id: UUID) -> SchoolWithRole:
+    def join_by_code(self, payload: SchoolJoinByCode, actor: CurrentActorContext) -> SchoolWithRole:
         invite = self.invite.get_active_by_code(payload.code)
         if not invite:
             raise HTTPException(status_code=404, detail="El codigo no existe o expiro")
@@ -143,7 +161,7 @@ class SchoolInviteService:
 
         target_role = SchoolRole(invite.role)
         existing_membership = self.school_user.get_by_user_school_and_role(
-            user_id, invite.school_id, target_role
+            actor.user.id, invite.school_id, target_role
         )
         if existing_membership:
             raise HTTPException(
@@ -151,11 +169,20 @@ class SchoolInviteService:
                 detail="Ya te encuentras en esta escuela con ese rol",
             )
 
-        link = SchoolUser(user_id=user_id, school_id=invite.school_id, role=target_role)
+        link = SchoolUser(
+            user_id=actor.user.id, school_id=invite.school_id, role=target_role
+        )
 
         try:
             self.school_user.create(link)
             self.db.commit()
+            self.audit_logger.safe_log_school_success(
+                action=AuditAction.JOIN,
+                description="Union a escuela por codigo exitosa",
+                ip=actor.ip,
+                school_id=invite.school_id,
+                actor_user_id=actor.user.id,
+            )
         except IntegrityError:
             self.db.rollback()
             raise HTTPException(

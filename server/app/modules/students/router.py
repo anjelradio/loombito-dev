@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, Response, status
 
-from app.dependencies.auth import CurrentUser, DBSession
+from app.dependencies.auth import CurrentActor, DBSession
 from app.modules.students.schemas import (
     EvaluationFinalizeSummaryRead,
     PaginatedStudent,
@@ -22,9 +22,11 @@ def list_students_by_evaluation(
     school_id: UUID,
     evaluation_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return StudentService(db).list_by_evaluation_for_teacher(school_id, evaluation_id, user.id)
+    return StudentService(db).list_by_evaluation_for_teacher(
+        school_id, evaluation_id, actor.user.id
+    )
 
 
 @router.get(
@@ -35,12 +37,12 @@ def list_gradebook_by_evaluation(
     school_id: UUID,
     evaluation_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
     return StudentService(db).list_gradebook_by_evaluation_for_teacher(
         school_id,
         evaluation_id,
-        user.id,
+        actor.user.id,
     )
 
 
@@ -54,14 +56,14 @@ def upsert_evaluation_grade(
     student_id: UUID,
     db: DBSession,
     payload: StudentEvaluationGradeUpsert,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
     return StudentService(db).upsert_evaluation_grade_for_teacher(
         school_id,
         evaluation_id,
         student_id,
         payload,
-        user.id,
+        actor,
     )
 
 
@@ -73,12 +75,12 @@ def finalize_evaluation(
     school_id: UUID,
     evaluation_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
     return StudentService(db).finalize_evaluation_for_teacher(
         school_id,
         evaluation_id,
-        user.id,
+        actor,
     )
 
 
@@ -87,13 +89,13 @@ def list_students_by_course(
     school_id: UUID,
     course_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
     per_page: int = Query(8, ge=1, le=50, description="Numero de resultados"),
     page: int = Query(1, ge=1, description="Numero de pagina"),
     search: str | None = Query(None, min_length=1, description="Busqueda por nombre"),
 ):
     return StudentService(db).list_by_course(
-        school_id, course_id, user.id, per_page, page, search
+        school_id, course_id, actor.user.id, per_page, page, search
     )
 
 
@@ -103,9 +105,9 @@ def create_student_in_course(
     course_id: UUID,
     db: DBSession,
     payload: StudentCreate,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return StudentService(db).create_in_course(school_id, course_id, payload, user.id)
+    return StudentService(db).create_in_course(school_id, course_id, payload, actor)
 
 
 @router.put("/schools/{school_id}/students/{student_id}", response_model=StudentRead)
@@ -114,9 +116,9 @@ def update_student(
     student_id: UUID,
     db: DBSession,
     payload: StudentUpdate,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return StudentService(db).update(school_id, student_id, payload, user.id)
+    return StudentService(db).update(school_id, student_id, payload, actor)
 
 
 @router.delete(
@@ -128,7 +130,7 @@ def unlink_student_from_course(
     course_id: UUID,
     student_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    StudentService(db).unlink_from_course(school_id, course_id, student_id, user.id)
+    StudentService(db).unlink_from_course(school_id, course_id, student_id, actor)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

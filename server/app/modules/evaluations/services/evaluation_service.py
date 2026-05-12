@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
+from app.dependencies.auth import CurrentActorContext
 from app.modules.evaluations.permissions import ensure_teacher_in_school
 from app.modules.evaluations.models import Evaluation
 from app.modules.evaluations.repositories.evaluation_repository import (
@@ -22,6 +23,8 @@ from app.modules.evaluations.schemas import (
     PaginatedEvaluation,
 )
 from app.modules.schools.repositories import SchoolRepository, SchoolUserRepository
+from app.modules.system.models import AuditAction
+from app.modules.system.services import AuditLogger
 
 
 class EvaluationService:
@@ -32,6 +35,7 @@ class EvaluationService:
         self.context = EvaluationContextRepository(db)
         self.school = SchoolRepository(db)
         self.school_user = SchoolUserRepository(db)
+        self.audit_logger = AuditLogger(db)
 
     def _ensure_school_exists(self, school_id: UUID) -> None:
         # Valida que la escuela exista.
@@ -124,10 +128,12 @@ class EvaluationService:
             for term in terms
         ]
 
-    def create_evaluation(self, school_id: UUID, payload: EvaluationCreate, user_id: UUID) -> EvaluationRead:
+    def create_evaluation(
+        self, school_id: UUID, payload: EvaluationCreate, actor: CurrentActorContext
+    ) -> EvaluationRead:
         # Crea una evaluacion para una asignacion del docente.
         self._ensure_school_exists(school_id)
-        teacher_membership = ensure_teacher_in_school(self.school_user, user_id, school_id)
+        teacher_membership = ensure_teacher_in_school(self.school_user, actor.user.id, school_id)
         self._validate_teacher_assignment_access(school_id, teacher_membership.id, payload.assignment_id)
         self._validate_evaluation_type(payload.evaluation_type_id)
         term = self._validate_term(school_id, payload.term_id)
@@ -156,6 +162,13 @@ class EvaluationService:
         row = self.evaluation.get_read_row_by_id(school_id, evaluation.id)
         if not row:
             raise HTTPException(status_code=404, detail="Evaluacion no encontrada")
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.CREATE,
+            description="Creacion de evaluacion exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
         return self._to_evaluation_read(row)
 
     def update_evaluation(
@@ -163,11 +176,11 @@ class EvaluationService:
         school_id: UUID,
         evaluation_id: UUID,
         payload: EvaluationUpdate,
-        user_id: UUID,
+        actor: CurrentActorContext,
     ) -> EvaluationRead:
         # Actualiza una evaluacion existente del docente.
         self._ensure_school_exists(school_id)
-        teacher_membership = ensure_teacher_in_school(self.school_user, user_id, school_id)
+        teacher_membership = ensure_teacher_in_school(self.school_user, actor.user.id, school_id)
         evaluation = self._ensure_teacher_owns_evaluation(school_id, teacher_membership.id, evaluation_id)
         self._validate_evaluation_type(payload.evaluation_type_id)
         term = self._validate_term(school_id, payload.term_id)
@@ -192,16 +205,32 @@ class EvaluationService:
         row = self.evaluation.get_read_row_by_id(school_id, evaluation.id)
         if not row:
             raise HTTPException(status_code=404, detail="Evaluacion no encontrada")
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.UPDATE,
+            description="Actualizacion de evaluacion exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
         return self._to_evaluation_read(row)
 
-    def delete_evaluation(self, school_id: UUID, evaluation_id: UUID, user_id: UUID) -> None:
+    def delete_evaluation(
+        self, school_id: UUID, evaluation_id: UUID, actor: CurrentActorContext
+    ) -> None:
         # Elimina logicamente una evaluacion del docente.
         self._ensure_school_exists(school_id)
-        teacher_membership = ensure_teacher_in_school(self.school_user, user_id, school_id)
+        teacher_membership = ensure_teacher_in_school(self.school_user, actor.user.id, school_id)
         evaluation = self._ensure_teacher_owns_evaluation(school_id, teacher_membership.id, evaluation_id)
         self.evaluation.soft_delete_grades_by_evaluation(school_id, evaluation.id)
         self.evaluation.delete(evaluation)
         self.db.commit()
+        self.audit_logger.safe_log_school_success(
+            action=AuditAction.DELETE,
+            description="Eliminacion de evaluacion exitosa",
+            ip=actor.ip,
+            school_id=school_id,
+            actor_user_id=actor.user.id,
+        )
 
     def list_evaluations_by_assignment(
         self,

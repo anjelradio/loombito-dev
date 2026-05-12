@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, Response, status
 
-from app.dependencies.auth import CurrentUser, DBSession
+from app.dependencies.auth import CurrentActor, DBSession
 from app.modules.academic.schemas import (
     AssignmentCourseGroupRead,
     AssignmentCourseOptionRead,
@@ -46,24 +46,28 @@ router = APIRouter(prefix="/academic", tags=["Academico"])
     "/schools/{school_id}/teacher/assignment-groups",
     response_model=list[TeacherAssignmentCourseGroupRead],
 )
-def list_teacher_assignment_groups(school_id: UUID, db: DBSession, user: CurrentUser):
-    return TeacherAssignmentContextService(db).list_teacher_assignment_groups(school_id, user.id)
+def list_teacher_assignment_groups(school_id: UUID, db: DBSession, actor: CurrentActor):
+    return TeacherAssignmentContextService(db).list_teacher_assignment_groups(
+        school_id, actor.user.id
+    )
 
 
 @router.get(
     "/schools/{school_id}/assignment-groups",
     response_model=list[TeacherAssignmentCourseGroupRead],
 )
-def list_assignment_groups_for_context(school_id: UUID, db: DBSession, user: CurrentUser):
-    return TeacherAssignmentContextService(db).list_assignment_groups_for_context(school_id, user.id)
+def list_assignment_groups_for_context(school_id: UUID, db: DBSession, actor: CurrentActor):
+    return TeacherAssignmentContextService(db).list_assignment_groups_for_context(
+        school_id, actor.user.id
+    )
 
 
 @router.get(
     "/schools/{school_id}/teacher/assignment-courses",
     response_model=list[TeacherAssignmentCourseRead],
 )
-def list_teacher_assignment_courses(school_id: UUID, db: DBSession, user: CurrentUser):
-    return TeacherAssignmentContextService(db).list_teacher_courses(school_id, user.id)
+def list_teacher_assignment_courses(school_id: UUID, db: DBSession, actor: CurrentActor):
+    return TeacherAssignmentContextService(db).list_teacher_courses(school_id, actor.user.id)
 
 
 @router.get(
@@ -74,12 +78,12 @@ def list_teacher_assignment_subjects_by_course(
     school_id: UUID,
     course_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
     return TeacherAssignmentContextService(db).list_teacher_subjects_by_course(
         school_id,
         course_id,
-        user.id,
+        actor.user.id,
     )
 
 
@@ -90,20 +94,20 @@ def list_teacher_assignment_subjects_by_course(
 def list_assignment_teachers(
     school_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
     per_page: int = Query(8, ge=1, le=50, description="Numero de resultados"),
     page: int = Query(1, ge=1, description="Numero de pagina"),
     search: str | None = Query(None, min_length=1, description="Busqueda por nombre"),
 ):
-    return AssignmentService(db).list_teachers(school_id, user.id, per_page, page, search)
+    return AssignmentService(db).list_teachers(school_id, actor.user.id, per_page, page, search)
 
 
 @router.get(
     "/schools/{school_id}/assignment-course-options",
     response_model=list[AssignmentCourseOptionRead],
 )
-def list_assignment_course_options(school_id: UUID, db: DBSession, user: CurrentUser):
-    return AssignmentService(db).list_course_options(school_id, user.id)
+def list_assignment_course_options(school_id: UUID, db: DBSession, actor: CurrentActor):
+    return AssignmentService(db).list_course_options(school_id, actor.user.id)
 
 
 @router.get(
@@ -114,9 +118,11 @@ def list_assignment_subject_options(
     school_id: UUID,
     course_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return AssignmentService(db).list_subject_options_by_course(school_id, course_id, user.id)
+    return AssignmentService(db).list_subject_options_by_course(
+        school_id, course_id, actor.user.id
+    )
 
 
 @router.get(
@@ -127,9 +133,11 @@ def list_teacher_assignments(
     school_id: UUID,
     teacher_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return AssignmentService(db).list_teacher_assignments(school_id, teacher_id, user.id)
+    return AssignmentService(db).list_teacher_assignments(
+        school_id, teacher_id, actor.user.id
+    )
 
 
 @router.post(
@@ -141,9 +149,9 @@ def create_teacher_assignment(
     teacher_id: UUID,
     db: DBSession,
     payload: AssignmentCreate,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return AssignmentService(db).create_for_teacher(school_id, teacher_id, payload, user.id)
+    return AssignmentService(db).create_for_teacher(school_id, teacher_id, payload, actor)
 
 
 @router.put(
@@ -156,14 +164,14 @@ def replace_teacher_assignment_subjects(
     course_id: UUID,
     db: DBSession,
     payload: AssignmentUpdate,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
     return AssignmentService(db).replace_teacher_course_subjects(
         school_id,
         teacher_id,
         course_id,
         payload,
-        user.id,
+        actor,
     )
 
 
@@ -176,13 +184,13 @@ def delete_teacher_assignments_by_course(
     teacher_id: UUID,
     course_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
     AssignmentService(db).delete_teacher_course_assignments(
         school_id,
         teacher_id,
         course_id,
-        user.id,
+        actor,
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -192,21 +200,23 @@ def create_subject(
     school_id: UUID,
     db: DBSession,
     payload: SubjectCreate,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return SubjectService(db).create(school_id, payload, user.id)
+    return SubjectService(db).create(school_id, payload, actor)
 
 
 @router.get("/schools/{school_id}/subjects", response_model=PaginatedSubject)
 def list_subjects_by_school(
     school_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
     per_page: int = Query(5, ge=1, le=50, description="Numero de resultados"),
     page: int = Query(1, ge=1, description="Numero de pagina"),
     search: str | None = Query(None, min_length=1, description="Busqueda por nombre"),
 ):
-    return SubjectService(db).list_by_school(school_id, user.id, per_page, page, search)
+    return SubjectService(db).list_by_school(
+        school_id, actor.user.id, per_page, page, search
+    )
 
 
 @router.patch("/schools/{school_id}/subjects/{subject_id}", response_model=SubjectRead)
@@ -215,9 +225,9 @@ def update_subject(
     subject_id: UUID,
     db: DBSession,
     payload: SubjectUpdate,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return SubjectService(db).update(school_id, subject_id, payload, user.id)
+    return SubjectService(db).update(school_id, subject_id, payload, actor)
 
 
 @router.delete(
@@ -227,20 +237,20 @@ def delete_subject(
     school_id: UUID,
     subject_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    SubjectService(db).delete(school_id, subject_id, user.id)
+    SubjectService(db).delete(school_id, subject_id, actor)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/schools/{school_id}/course-form-options", response_model=CourseFormOptionsRead)
-def get_course_form_options(school_id: UUID, db: DBSession, user: CurrentUser):
-    return CourseService(db).get_form_options(school_id, user.id)
+def get_course_form_options(school_id: UUID, db: DBSession, actor: CurrentActor):
+    return CourseService(db).get_form_options(school_id, actor.user.id)
 
 
 @router.post("/schools/{school_id}/courses", response_model=CourseRead)
-def create_course(school_id: UUID, db: DBSession, payload: CourseCreate, user: CurrentUser):
-    return CourseService(db).create(school_id, payload, user.id)
+def create_course(school_id: UUID, db: DBSession, payload: CourseCreate, actor: CurrentActor):
+    return CourseService(db).create(school_id, payload, actor)
 
 
 @router.put("/schools/{school_id}/courses/{course_id}", response_model=CourseRead)
@@ -249,14 +259,14 @@ def update_course(
     course_id: UUID,
     db: DBSession,
     payload: CourseUpdate,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return CourseService(db).update(school_id, course_id, payload, user.id)
+    return CourseService(db).update(school_id, course_id, payload, actor)
 
 
 @router.delete("/schools/{school_id}/courses/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_course(school_id: UUID, course_id: UUID, db: DBSession, user: CurrentUser):
-    CourseService(db).delete(school_id, course_id, user.id)
+def delete_course(school_id: UUID, course_id: UUID, db: DBSession, actor: CurrentActor):
+    CourseService(db).delete(school_id, course_id, actor)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -264,22 +274,22 @@ def delete_course(school_id: UUID, course_id: UUID, db: DBSession, user: Current
 def list_courses_by_school(
     school_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
     per_page: int = Query(8, ge=1, le=50, description="Numero de resultados"),
     page: int = Query(1, ge=1, description="Numero de pagina"),
     search: str | None = Query(None, min_length=1, description="Busqueda por nombre"),
 ):
-    return CourseService(db).list_by_school(school_id, user.id, per_page, page, search)
+    return CourseService(db).list_by_school(school_id, actor.user.id, per_page, page, search)
 
 
 @router.get("/schools/{school_id}/courses/{course_id}", response_model=CourseRead)
-def get_course_by_id(school_id: UUID, course_id: UUID, db: DBSession, user: CurrentUser):
-    return CourseService(db).get_by_id(school_id, course_id, user.id)
+def get_course_by_id(school_id: UUID, course_id: UUID, db: DBSession, actor: CurrentActor):
+    return CourseService(db).get_by_id(school_id, course_id, actor.user.id)
 
 
 @router.get("/schools/{school_id}/terms", response_model=list[TermRead])
-def list_terms_by_school(school_id: UUID, db: DBSession, user: CurrentUser):
-    return TermService(db).list_terms(school_id, user.id)
+def list_terms_by_school(school_id: UUID, db: DBSession, actor: CurrentActor):
+    return TermService(db).list_terms(school_id, actor.user.id)
 
 
 @router.post("/schools/{school_id}/terms", response_model=TermRead)
@@ -287,9 +297,9 @@ def create_term_by_school(
     school_id: UUID,
     db: DBSession,
     payload: TermCreate,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return TermService(db).create_term(school_id, payload, user.id)
+    return TermService(db).create_term(school_id, payload, actor)
 
 
 @router.put("/schools/{school_id}/terms/{term_id}", response_model=TermRead)
@@ -298,14 +308,14 @@ def update_term_by_school(
     term_id: UUID,
     db: DBSession,
     payload: TermUpdate,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return TermService(db).update_term(school_id, term_id, payload, user.id)
+    return TermService(db).update_term(school_id, term_id, payload, actor)
 
 
 @router.delete("/schools/{school_id}/terms/{term_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_term_by_school(school_id: UUID, term_id: UUID, db: DBSession, user: CurrentUser):
-    TermService(db).delete_term(school_id, term_id, user.id)
+def delete_term_by_school(school_id: UUID, term_id: UUID, db: DBSession, actor: CurrentActor):
+    TermService(db).delete_term(school_id, term_id, actor)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -313,8 +323,8 @@ def delete_term_by_school(school_id: UUID, term_id: UUID, db: DBSession, user: C
     "/schools/{school_id}/evaluation-weights",
     response_model=list[EvaluationWeightLevelRead],
 )
-def list_evaluation_weights_by_school(school_id: UUID, db: DBSession, user: CurrentUser):
-    return TermService(db).list_evaluation_weights(school_id, user.id)
+def list_evaluation_weights_by_school(school_id: UUID, db: DBSession, actor: CurrentActor):
+    return TermService(db).list_evaluation_weights(school_id, actor.user.id)
 
 
 @router.put(
@@ -326,11 +336,11 @@ def upsert_evaluation_weight_by_school_level(
     school_level_id: UUID,
     db: DBSession,
     payload: EvaluationWeightUpsert,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
     return TermService(db).upsert_evaluation_weight(
         school_id,
         school_level_id,
         payload,
-        user.id,
+        actor,
     )

@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, Response, status
 
-from app.dependencies.auth import CurrentUser, DBSession
+from app.dependencies.auth import CurrentActor, DBSession
 from app.modules.attendance.schemas import (
     AttendanceFinalizeSummaryRead,
     AttendanceGradebookRowRead,
@@ -18,8 +18,8 @@ router = APIRouter(prefix="/attendance", tags=["Asistencias"])
 
 
 @router.get("/schools/{school_id}/status-options", response_model=list[AttendanceStatusRead])
-def list_attendance_status_options(school_id: UUID, db: DBSession, user: CurrentUser):
-    return AttendanceService(db).list_status_options(school_id, user.id)
+def list_attendance_status_options(school_id: UUID, db: DBSession, actor: CurrentActor):
+    return AttendanceService(db).list_status_options(school_id, actor.user.id)
 
 
 @router.post("/schools/{school_id}/sessions", response_model=AttendanceSessionRead)
@@ -27,9 +27,9 @@ def create_attendance_session(
     school_id: UUID,
     db: DBSession,
     payload: AttendanceSessionCreate,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return AttendanceService(db).create_session(school_id, payload, user.id)
+    return AttendanceService(db).create_session(school_id, payload, actor)
 
 
 @router.get(
@@ -40,14 +40,14 @@ def list_attendance_sessions_by_assignment(
     school_id: UUID,
     assignment_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
     per_page: int = Query(8, ge=1, le=50, description="Numero de resultados"),
     page: int = Query(1, ge=1, description="Numero de pagina"),
 ):
     return AttendanceService(db).list_sessions_by_assignment(
         school_id,
         assignment_id,
-        user.id,
+        actor.user.id,
         per_page,
         page,
     )
@@ -58,9 +58,9 @@ def get_attendance_session_by_id(
     school_id: UUID,
     session_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return AttendanceService(db).get_session_by_id(school_id, session_id, user.id)
+    return AttendanceService(db).get_session_by_id(school_id, session_id, actor.user.id)
 
 
 @router.delete("/schools/{school_id}/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -68,9 +68,9 @@ def delete_attendance_session(
     school_id: UUID,
     session_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    AttendanceService(db).delete_session(school_id, session_id, user.id)
+    AttendanceService(db).delete_session(school_id, session_id, actor)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -82,9 +82,9 @@ def list_attendance_gradebook_by_session(
     school_id: UUID,
     session_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return AttendanceService(db).list_gradebook_by_session(school_id, session_id, user.id)
+    return AttendanceService(db).list_gradebook_by_session(school_id, session_id, actor.user.id)
 
 
 @router.put(
@@ -97,14 +97,14 @@ def upsert_attendance_record(
     student_id: UUID,
     db: DBSession,
     payload: AttendanceRecordUpsert,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
     return AttendanceService(db).upsert_record(
         school_id,
         session_id,
         student_id,
         payload,
-        user.id,
+        actor,
     )
 
 
@@ -116,6 +116,6 @@ def finalize_attendance_session(
     school_id: UUID,
     session_id: UUID,
     db: DBSession,
-    user: CurrentUser,
+    actor: CurrentActor,
 ):
-    return AttendanceService(db).finalize_session(school_id, session_id, user.id)
+    return AttendanceService(db).finalize_session(school_id, session_id, actor)

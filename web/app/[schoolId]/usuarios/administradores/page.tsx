@@ -32,7 +32,9 @@ export default async function AdministradoresPage({
     pageSize,
   );
   if (!response.ok) {
-    throw new Error(response.errors[0] ?? "Error al obtener los administradores.");
+    throw new Error(
+      response.errors[0] ?? "Error al obtener los administradores.",
+    );
   }
 
   const data = response.data;
@@ -67,7 +69,11 @@ export default async function AdministradoresPage({
               description="Visualiza rapidamente el estado del equipo administrativo y su ritmo de incorporacion."
               items={[
                 { label: "Total", value: "--" },
-                { label: "Recientes", value: "--", hint: "pendiente de integrar" },
+                {
+                  label: "Recientes",
+                  value: "--",
+                  hint: "pendiente de integrar",
+                },
               ]}
             />
 
@@ -79,14 +85,23 @@ export default async function AdministradoresPage({
             />
           </div>
 
-          <AccentCard variant="base" eyebrow="Listado" className="flex h-full flex-col p-6">
+          <AccentCard
+            variant="base"
+            eyebrow="Listado"
+            className="flex h-full flex-col p-6"
+          >
             <UsersSearchRedirectForm basePath={searchPath} />
 
             <ScrollArea className="h-[400px] pr-3">
               <div className="space-y-3 pb-1">
                 {users.length ? (
                   users.map((item) => (
-                    <UserListItemCard key={item.id} schoolId={schoolId} item={item} label="Administrador" />
+                    <UserListItemCard
+                      key={item.id}
+                      schoolId={schoolId}
+                      item={item}
+                      label="Administrador"
+                    />
                   ))
                 ) : (
                   <div className="rounded-xl border border-[#d5e3f3] bg-[#f8fbff] p-4 text-sm text-[#52749a]">

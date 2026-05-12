@@ -27,7 +27,7 @@ class AuthApi {
   Future<User> checkAuthStatus(String token) async {
     try {
       final response = await _dio.post(
-        '/auth/check-status/',
+        '/auth/check-status',
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
 
@@ -43,7 +43,7 @@ class AuthApi {
     try {
       final response = await _dio.post(
         'auth/login',
-        data: {'email': email, 'password': password},
+        data: AuthRequestMapper.toLoginRequest(email, password),
       );
       return UserMapper.userJsonToEntity(response.data);
     } on DioException catch (e) {
@@ -62,118 +62,18 @@ class AuthApi {
     try {
       final response = await _dio.post(
         'auth/register',
-        data: {
-          'first_name': firstName,
-          'last_name': lastName,
-          'email': email,
-          'password': password,
-        },
+        data: AuthRequestMapper.toRegisterRequest(
+          firstName,
+          lastName,
+          email,
+          password,
+        ),
       );
       return UserMapper.userJsonToEntity(response.data);
     } on DioException catch (e) {
       _throwParsedDioError(e, 'No fue posible registrarse');
     } catch (_) {
       throw CustomError('No fue posible registrarse');
-    }
-  }
-
-  Future<User> updatePersonalInfo(
-    String token,
-    String firstName,
-    String lastName,
-  ) async {
-    try {
-      final response = await _dio.patch(
-        '/users/me/profile',
-        data: {'first_name': firstName, 'last_name': lastName},
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
-
-      return UserMapper.userJsonWithoutTokenToEntity(
-        Map<String, dynamic>.from(response.data),
-        token: token,
-      );
-    } on DioException catch (e) {
-      _throwParsedDioError(e, 'No fue posible actualizar los datos');
-    } catch (_) {
-      throw CustomError('No fue posible actualizar los datos');
-    }
-  }
-
-  Future<void> requestEmailOtp(String token) async {
-    try {
-      await _dio.post(
-        '/users/me/email/request-otp',
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
-    } on DioException catch (e) {
-      _throwParsedDioError(e, 'No fue posible enviar el codigo OTP');
-    } catch (_) {
-      throw CustomError('No fue posible enviar el codigo OTP');
-    }
-  }
-
-  Future<String> verifyEmailOtp(String token, String otp) async {
-    try {
-      final response = await _dio.post(
-        '/users/me/email/verify-otp',
-        data: {'otp': otp},
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
-
-      return EmailChangeMapper.emailChangeTokenFromJson(
-        Map<String, dynamic>.from(response.data),
-      );
-    } on DioException catch (e) {
-      _throwParsedDioError(e, 'No fue posible verificar el codigo OTP');
-    } catch (_) {
-      throw CustomError('No fue posible verificar el codigo OTP');
-    }
-  }
-
-  Future<User> updateEmail(
-    String token,
-    String newEmail,
-    String emailChangeToken,
-  ) async {
-    try {
-      final response = await _dio.patch(
-        '/users/me/email',
-        data: {'new_email': newEmail, 'email_change_token': emailChangeToken},
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
-
-      return UserMapper.userJsonWithoutTokenToEntity(
-        Map<String, dynamic>.from(response.data),
-        token: token,
-      );
-    } on DioException catch (e) {
-      _throwParsedDioError(e, 'No fue posible actualizar el correo');
-    } catch (_) {
-      throw CustomError('No fue posible actualizar el correo');
-    }
-  }
-
-  Future<void> updatePassword(
-    String token,
-    String currentPassword,
-    String newPassword,
-    String confirmNewPassword,
-  ) async {
-    try {
-      await _dio.patch(
-        '/users/me/password',
-        data: {
-          'current_password': currentPassword,
-          'new_password': newPassword,
-          'confirm_new_password': confirmNewPassword,
-        },
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
-    } on DioException catch (e) {
-      _throwParsedDioError(e, 'No fue posible actualizar la contraseña');
-    } catch (_) {
-      throw CustomError('No fue posible actualizar la contraseña');
     }
   }
 }

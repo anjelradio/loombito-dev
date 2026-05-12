@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     OTP_RESEND_COOLDOWN_SEC: int = Field(default=60, env="OTP_RESEND_COOLDOWN_SEC")
 
     REDIS_URL: str = Field(..., env="REDIS_URL")
+    AUDIT_ENCRYPTION_KEY: str = Field(..., env="AUDIT_ENCRYPTION_KEY")
+    AUDIT_ACCESS_KEY_LENGTH: int = Field(default=10, env="AUDIT_ACCESS_KEY_LENGTH")
+    AUDIT_ACCESS_EXPIRES_MIN: int = Field(default=10, env="AUDIT_ACCESS_EXPIRES_MIN")
+    AUDIT_ACCESS_MAX_ATTEMPTS: int = Field(default=5, env="AUDIT_ACCESS_MAX_ATTEMPTS")
+    AUDIT_ACCESS_SESSION_SEC: int = Field(default=1800, env="AUDIT_ACCESS_SESSION_SEC")
 
     STRIPE_SECRET_KEY: str = Field(default="", env="STRIPE_SECRET_KEY")
     STRIPE_WEBHOOK_SECRET: str = Field(default="", env="STRIPE_WEBHOOK_SECRET")
@@ -28,6 +33,14 @@ class Settings(BaseSettings):
         default="", env="STRIPE_PRICE_ID_INSTITUTIONAL"
     )
     APP_BASE_URL: str = Field(default="http://localhost:3000", env="APP_BASE_URL")
+
+    GEMINI_API_KEY: str = Field(default="", env="GEMINI_API_KEY")
+    GEMINI_MODEL_PRIMARY: str = Field(default="gemini-2.5-flash", env="GEMINI_MODEL_PRIMARY")
+    GEMINI_MODEL_FALLBACKS: str = Field(
+        default="gemini-2.5-flash-lite,gemini-1.5-flash",
+        env="GEMINI_MODEL_FALLBACKS",
+    )
+    GEMINI_TIMEOUT_SEC: int = Field(default=30, env="GEMINI_TIMEOUT_SEC")
 
     PROJECT_NAME: str = "LoomBo - API"
     ENVIRONMENT: str = Field(..., env="ENVIRONMENT")

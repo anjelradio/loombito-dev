@@ -13,5 +13,16 @@ export const SchoolResponseSchema = z.object({
 
 export const SchoolResponseListSchema = z.array(SchoolResponseSchema);
 
+export const SchoolDirectoryResponseSchema = z.object({
+  schools: z.array(SchoolResponseSchema),
+  page: z.number(),
+  per_page: z.number(),
+  total: z.number(),
+  total_pages: z.number(),
+  has_prev: z.boolean(),
+  has_next: z.boolean(),
+});
+
 export type SchoolResponseDto = z.infer<typeof SchoolResponseSchema>;
 export type SchoolResponseListDto = z.infer<typeof SchoolResponseListSchema>;
+export type SchoolDirectoryResponseDto = z.infer<typeof SchoolDirectoryResponseSchema>;
