@@ -25,19 +25,19 @@ if config.config_file_name is not None:
 
 load_dotenv()
 # DEV
-DATABASE_URL = os.getenv("DATABASE_URL")
+# DATABASE_URL = os.getenv("DATABASE_URL")
 
 
 # PROD
-# raw_url = os.environ["DATABASE_URL"]
-# url = raw_url
-# if url.startswith("postgres//"):
-#     url = "postgresql+psycopg://" + url[len("postgres://") :]
-# elif url.startswith("postgresql://") and "+psycopg" not in url:
-#     url = "postgresql+psycopg://" + url[len("postgresql://") :]
-# DATABASE_URL = url
+raw_url = os.environ["DATABASE_URL"]
+url = raw_url
+if url.startswith("postgres//"):
+    url = "postgresql+psycopg://" + url[len("postgres://") :]
+elif url.startswith("postgresql://") and "+psycopg" not in url:
+    url = "postgresql+psycopg://" + url[len("postgresql://") :]
+DATABASE_URL = url
 
-# target_metadata = SQLModel.metadata
+target_metadata = SQLModel.metadata
 
 
 def _is_sqlite_url(url: str | None) -> bool:
