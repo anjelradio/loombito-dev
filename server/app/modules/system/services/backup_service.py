@@ -69,7 +69,7 @@ class BackupService:
     # Devuelve IDs de cursos actuales para filtrar tablas puente sin school_id.
     def _list_course_ids_for_school(self, school_id: UUID) -> list[UUID]:
         courses_table = SQLModel.metadata.tables.get("courses")
-        if not courses_table:
+        if courses_table is None:
             return []
         rows = self.db.execute(
             select(courses_table.c.id).where(
