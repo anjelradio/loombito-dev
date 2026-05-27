@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/academic/academic.dart';
+import 'package:mobile/features/communications/communications.dart';
 import 'package:mobile/features/schools/domain/domain.dart';
 import 'package:mobile/features/schools/presentation/providers/providers.dart';
 import 'package:mobile/features/schools/presentation/widgets/school_home/school_home.dart';
@@ -76,6 +77,8 @@ class _SchoolHomeScreenState extends ConsumerState<SchoolHomeScreen> {
                 endColor: const Color(0xFF1F476E),
                 height: 178,
               ),
+              const SizedBox(height: 12),
+              SchoolHomeCommunicationsActionCard(schoolId: widget.schoolId),
               const SizedBox(height: 12),
               Row(
                 children: [

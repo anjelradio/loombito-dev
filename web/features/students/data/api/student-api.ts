@@ -17,7 +17,11 @@ import type {
 } from "../../domain/entities/student-gradebook";
 
 import {
+  serverErrorResult,
+} from "@/features/shared/infrastructure/errors/api-error-result";
+import {
   toEvaluationFinalizeSummaryEntity,
+  toStudentInviteExportRequestDto,
   toStudentCreateRequestDto,
   toStudentEntity,
   toStudentGradeUpsertRequestDto,
@@ -32,6 +36,7 @@ import {
   StudentGradebookRowResponseSchema,
   StudentListResponseSchema,
   StudentResponseSchema,
+  StudentInviteExportSchema,
   StudentUpdateSchema,
 } from "../schemas";
 
@@ -206,5 +211,55 @@ export const studentApi = {
       token,
       fallbackMessage: "No se pudo desvincular el estudiante del curso.",
     });
+  },
+
+  async exportStudentInvitesByCourse(
+    schoolId: string,
+    courseId: string,
+    data: unknown,
+  ): Promise<ApiResult<{ fileName: string; contentType: string; base64: string }>> {
+    const input = parseWithSchema(StudentInviteExportSchema, data);
+    if (!input.ok) {
+      return input;
+    }
+
+    const token = await getToken();
+    if (!token) {
+      return errorResult("No autorizado");
+    }
+
+    try {
+      const response = await fetch(`${baseUrl}/schools/${schoolId}/courses/${courseId}/invites/export`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(toStudentInviteExportRequestDto(input.data)),
+      });
+
+      if (!response.ok) {
+        return serverErrorResult(response, "No se pudieron generar los codigos de vinculacion.");
+      }
+
+      const fileBuffer = await response.arrayBuffer();
+      const disposition = response.headers.get("content-disposition") || "";
+      const fileNameMatch = disposition.match(/filename="([^"]+)"/);
+      const fileName = fileNameMatch?.[1] ?? "codigos_vinculacion_estudiantes.xlsx";
+      const contentType =
+        response.headers.get("content-type") ||
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+      return {
+        ok: true,
+        data: {
+          fileName,
+          contentType,
+          base64: Buffer.from(fileBuffer).toString("base64"),
+        },
+      };
+    } catch {
+      return errorResult("Error de conexion. Intenta mas tarde.");
+    }
   },
 };

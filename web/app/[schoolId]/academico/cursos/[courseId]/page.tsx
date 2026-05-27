@@ -7,6 +7,7 @@ import DeleteCourseButton from "@/features/academic/presentation/components/cour
 import EditCourseButton from "@/features/academic/presentation/components/course/EditCourseButton";
 import StudentListItemCard from "@/features/students/presentation/components/StudentListItemCard";
 import RegisterStudentButton from "@/features/students/presentation/components/RegisterStudentButton";
+import GenerateStudentInviteCodesButton from "@/features/students/presentation/components/GenerateStudentInviteCodesButton";
 import StudentSearchForm from "@/features/students/presentation/components/StudentSearchForm";
 import { AccentCard } from "@/features/shared/components/cards/AccentCard";
 import IndicatorsSummaryCard from "@/features/shared/components/cards/IndicatorsSummaryCard";
@@ -120,6 +121,7 @@ export default async function CourseDetailPage({
             <AccentCard variant="softBlue" eyebrow="Acciones" className="p-4">
               <div className="flex flex-wrap gap-2">
                 <RegisterStudentButton schoolId={schoolId} courseId={courseId} />
+                <GenerateStudentInviteCodesButton schoolId={schoolId} courseId={courseId} />
                 <button
                   type="button"
                   className="h-10 rounded-lg bg-[#3f5f83] px-4 text-sm hover:bg-[#355170] opacity-80"

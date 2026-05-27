@@ -36,4 +36,12 @@ class StudentRepository {
       observation,
     );
   }
+
+  Future<LinkedStudent> joinStudentByCode(String code) {
+    return _studentApi.joinStudentByCode(code);
+  }
+
+  Future<List<LinkedStudent>> getStudentsByUser() {
+    return _studentApi.getStudentsByUser();
+  }
 }

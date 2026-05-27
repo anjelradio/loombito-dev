@@ -36,6 +36,13 @@ class StudentRepository:
         )
         return self.db.exec(query).first()
 
+    def get_active_by_id_in_school_for_any_school(self, student_id: UUID) -> Student | None:
+        query = select(Student).where(
+            Student.id == student_id,
+            Student.state == True,
+        )
+        return self.db.exec(query).first()
+
     # Busca un estudiante activo por identidad (nombre, apellido y fecha de nacimiento) en la escuela.
     def get_by_identity_in_school(
         self,

@@ -73,3 +73,11 @@ export type ApiActionResult = ApiStatusResult;
  * Alias para ok o error sin data.
  */
 export type ApiStatusOrErrorResult = ApiStatusResult;
+
+export type ApiFile = {
+  fileName: string;
+  contentType: string;
+  blob: Blob;
+};
+
+export type ApiFileResult = ApiOk<ApiFile> | ApiError;

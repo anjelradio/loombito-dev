@@ -21,7 +21,10 @@ class MainHeader extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        _CircleIconButton(icon: Icons.notifications, onPressed: () {}),
+        _CircleIconButton(
+          icon: Icons.notifications,
+          onPressed: () => context.push('/communications/notifications'),
+        ),
         const SizedBox(width: 8),
         _CircleIconButton(
           icon: Icons.person,

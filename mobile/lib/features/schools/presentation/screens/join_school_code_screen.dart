@@ -142,7 +142,7 @@ class _ScreenHeader extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           'Unirse a una escuela',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
             color: const Color(0xFF0F2C4F),
             fontWeight: FontWeight.w700,
           ),

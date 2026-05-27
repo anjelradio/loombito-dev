@@ -7,6 +7,12 @@ from .student_schema import (
     StudentRead,
     StudentUpdate,
 )
+from .student_parent_invite_schema import (
+    StudentInviteBulkExportRequest,
+    StudentJoinByCode,
+    StudentLinkedRead,
+    StudentLinkedByUserRead,
+)
 
 __all__ = [
     "StudentCreate",
@@ -16,4 +22,8 @@ __all__ = [
     "StudentEvaluationGradeUpsert",
     "StudentEvaluationGradeRowRead",
     "EvaluationFinalizeSummaryRead",
+    "StudentInviteBulkExportRequest",
+    "StudentJoinByCode",
+    "StudentLinkedRead",
+    "StudentLinkedByUserRead",
 ]

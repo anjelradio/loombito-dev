@@ -1,5 +1,6 @@
 import type {
   StudentCreateData,
+  StudentInviteExportData,
   StudentUpdateData,
 } from "../../../schemas/students/request";
 import type { StudentGradeUpsertData } from "../../../schemas/gradebook/request";
@@ -24,5 +25,12 @@ export function toStudentGradeUpsertRequestDto(data: StudentGradeUpsertData) {
   return {
     score: data.score,
     observation: data.observation || null,
+  };
+}
+
+export function toStudentInviteExportRequestDto(data: StudentInviteExportData) {
+  return {
+    expires_at: data.expiresAt,
+    max_uses: data.maxUses,
   };
 }

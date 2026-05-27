@@ -62,4 +62,41 @@ class StudentApi {
       },
     );
   }
+
+  Future<LinkedStudent> joinStudentByCode(String code) async {
+    final response = await dio.post(
+      '/students/join',
+      data: {'code': code.trim().toUpperCase()},
+    );
+
+    final data = Map<String, dynamic>.from(response.data as Map);
+    return LinkedStudent(
+      id: data['id'] as String,
+      firstName: data['first_name'] as String? ?? '',
+      lastName: data['last_name'] as String? ?? '',
+      schoolId: data['school_id'] as String? ?? '',
+      schoolName: data['school_name'] as String? ?? '',
+      courseName: data['course_name'] as String?,
+    );
+  }
+
+  Future<List<LinkedStudent>> getStudentsByUser() async {
+    final response = await dio.get('/students/by_user');
+    final rows = (response.data as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
+
+    return rows
+        .map(
+          (data) => LinkedStudent(
+            id: data['id'] as String,
+            firstName: data['first_name'] as String? ?? '',
+            lastName: data['last_name'] as String? ?? '',
+            schoolId: data['school_id'] as String? ?? '',
+            schoolName: data['school_name'] as String? ?? '',
+            courseName: data['course_name'] as String?,
+          ),
+        )
+        .toList();
+  }
 }

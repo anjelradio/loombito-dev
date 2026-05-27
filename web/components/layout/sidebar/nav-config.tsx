@@ -69,6 +69,7 @@ export const navigationByRole = {
         { title: "Evaluaciones", url: "docente/evaluaciones" },
         { title: "Asistencias", url: "docente/asistencias" },
         { title: "Promedios", url: "docente/promedios" },
+        { title: "Comunicados", url: "docente/comunicados" },
       ],
     },
     {

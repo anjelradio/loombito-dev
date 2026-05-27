@@ -43,4 +43,8 @@ export const studentRepository = {
   unlinkStudentFromCourse(schoolId: string, courseId: string, studentId: string) {
     return studentApi.unlinkStudentFromCourse(schoolId, courseId, studentId);
   },
+
+  exportStudentInvitesByCourse(schoolId: string, courseId: string, data: unknown) {
+    return studentApi.exportStudentInvitesByCourse(schoolId, courseId, data);
+  },
 };

@@ -1,0 +1,1 @@
+enum HomeLinkedSection { schools, students }

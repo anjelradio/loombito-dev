@@ -15,7 +15,10 @@ class SchoolHomeHeader extends StatelessWidget {
         ),
         const Spacer(),
         const SizedBox(width: 8),
-        _CircleIconButton(icon: Icons.notifications_outlined, onPressed: () {}),
+        _CircleIconButton(
+          icon: Icons.notifications_outlined,
+          onPressed: () => context.push('/communications/notifications'),
+        ),
         const SizedBox(width: 8),
         _CircleIconButton(
           icon: Icons.person_outline_rounded,

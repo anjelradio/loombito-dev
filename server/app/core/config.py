@@ -44,6 +44,8 @@ class Settings(BaseSettings):
 
     BACKUP_STORAGE_DIR: str = Field(default="storage/backups", env="BACKUP_STORAGE_DIR")
 
+    MAX_LICENSES_PER_MONTH: int = Field(default=2, env="MAX_LICENSES_PER_MONTH")
+
     PROJECT_NAME: str = "LoomBo - API"
     ENVIRONMENT: str = Field(..., env="ENVIRONMENT")
 

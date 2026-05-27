@@ -8,8 +8,10 @@ from app.core.config import settings
 from app.modules.academic.router import router as academic_router
 from app.modules.attendance.router import router as attendance_router
 from app.modules.auth.router import router as auth_router
+from app.modules.communications.router import router as communications_router
 from app.modules.evaluations.router import router as evaluations_router
 from app.modules.intelligence.router import router as intelligence_router
+from app.modules.licenses.router import router as licenses_router
 from app.modules.reports.router import router as reports_router
 from app.modules.schools.router import router as school_router
 from app.modules.students.router import router as student_router
@@ -60,3 +62,7 @@ app.include_router(subscriptions_router, prefix="/api")
 app.include_router(reports_router, prefix="/api")
 
 app.include_router(system_router, prefix="/api")
+
+app.include_router(communications_router, prefix="/api")
+
+app.include_router(licenses_router, prefix="/api")

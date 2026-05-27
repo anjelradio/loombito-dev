@@ -3,11 +3,14 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/config/router/app_router_notifier.dart';
 import 'package:mobile/features/attendance/attendance.dart';
 import 'package:mobile/features/auth/auth.dart';
+import 'package:mobile/features/communications/communications.dart';
 import 'package:mobile/features/evaluations/evaluations.dart';
 import 'package:mobile/features/home/home.dart';
 import 'package:mobile/features/intelligence/intelligence.dart';
 import 'package:mobile/features/introduction/tutorial.dart';
+import 'package:mobile/features/licenses/licenses.dart';
 import 'package:mobile/features/schools/schools.dart';
+import 'package:mobile/features/students/students.dart';
 
 final goRouterProvider = Provider((ref) {
   final goRouterNotifier = ref.read(goRouterNotifierProvider);
@@ -43,6 +46,10 @@ final goRouterProvider = Provider((ref) {
       GoRoute(
         path: '/join/school-code',
         builder: (context, state) => const JoinSchoolCodeScreen(),
+      ),
+      GoRoute(
+        path: '/join/student-code',
+        builder: (context, state) => const JoinStudentCodeScreen(),
       ),
       GoRoute(
         path: '/schools/:schoolId/home',
@@ -114,6 +121,43 @@ final goRouterProvider = Provider((ref) {
           return StudentClassificationScreen(
             schoolId: schoolId,
             assignmentId: assignmentId,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/schools/:schoolId/teacher/comunicados/:courseId/:studentId',
+        builder: (context, state) {
+          final schoolId = state.pathParameters['schoolId'] ?? '';
+          final courseId = state.pathParameters['courseId'] ?? '';
+          final studentId = state.pathParameters['studentId'] ?? '';
+          final payload = state.extra;
+          final extras = payload is Map<String, dynamic> ? payload : null;
+
+          return StudentCommunicationsScreen(
+            schoolId: schoolId,
+            courseId: courseId,
+            studentId: studentId,
+            courseName: extras?['courseName']?.toString(),
+            studentName: extras?['studentName']?.toString(),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/communications/notifications',
+        builder: (context, state) => const NotificationsInboxScreen(),
+      ),
+      GoRoute(
+        path: '/schools/:schoolId/students/:studentId/licenses',
+        builder: (context, state) {
+          final schoolId = state.pathParameters['schoolId'] ?? '';
+          final studentId = state.pathParameters['studentId'] ?? '';
+          final payload = state.extra;
+          final extras = payload is Map<String, dynamic> ? payload : null;
+
+          return StudentLicensesScreen(
+            schoolId: schoolId,
+            studentId: studentId,
+            studentName: extras?['studentName']?.toString(),
           );
         },
       ),

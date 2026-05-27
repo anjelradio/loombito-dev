@@ -60,7 +60,7 @@ class SchoolsJoinButton extends StatelessWidget {
                     textColor: const Color(0xFF1F476E),
                     onPressed: () {
                       Navigator.of(sheetContext).pop();
-                      _showComingSoonSnackbar(context);
+                      context.push('/join/student-code');
                     },
                   ),
                 ),
@@ -69,16 +69,6 @@ class SchoolsJoinButton extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  void _showComingSoonSnackbar(BuildContext context) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Proximamente podras vincularte a un estudiante.'),
-        backgroundColor: Colors.red.shade800,
-      ),
     );
   }
 

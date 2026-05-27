@@ -6,6 +6,7 @@ import {
 } from "@/features/shared/infrastructure/errors/api-error-result";
 import type {
   ApiActionResult,
+  ApiFileResult,
   ApiResult,
 } from "@/features/shared/infrastructure/types/api-resource";
 
@@ -27,6 +28,12 @@ type JsonRequestConfig<TParsed, TResult> = RequestConfig & {
 
 type StatusRequestConfig = RequestConfig & {
   fallbackMessage: string;
+};
+
+type FileRequestConfig = RequestConfig & {
+  fallbackMessage: string;
+  defaultFileName: string;
+  defaultContentType?: string;
 };
 
 function buildHeaders(token?: string): HeadersInit {
@@ -79,6 +86,37 @@ export async function apiRequestStatus(
     }
 
     return { ok: true };
+  } catch {
+    return errorResult("Error de conexion. Intenta mas tarde.");
+  }
+}
+
+export async function apiRequestFile(
+  config: FileRequestConfig,
+): Promise<ApiFileResult> {
+  try {
+    const res = await request(config);
+    if (!res.ok) {
+      return serverErrorResult(res, config.fallbackMessage);
+    }
+
+    const blob = await res.blob();
+    const disposition = res.headers.get("content-disposition") || "";
+    const fileNameMatch = disposition.match(/filename="([^"]+)"/);
+    const fileName = fileNameMatch?.[1] ?? config.defaultFileName;
+    const contentType =
+      res.headers.get("content-type") ||
+      config.defaultContentType ||
+      "application/octet-stream";
+
+    return {
+      ok: true,
+      data: {
+        fileName,
+        contentType,
+        blob,
+      },
+    };
   } catch {
     return errorResult("Error de conexion. Intenta mas tarde.");
   }

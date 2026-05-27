@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:mobile/features/shared/widgets/app_section_header.dart';
 
 class MainHeroSection extends StatelessWidget {
-  const MainHeroSection({super.key});
+  final String title;
+  final String subtitle;
+
+  const MainHeroSection({
+    super.key,
+    this.title = 'Mis colegios',
+    this.subtitle = 'Bienvenido. Aqui puedes ver tus instituciones vinculadas.',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -49,12 +56,11 @@ class MainHeroSection extends StatelessWidget {
               ),
             ),
           ),
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(18, 16, 18, 16),
             child: AppSectionHeader(
-              title: 'Mis colegios',
-              subtitle:
-                  'Bienvenido. Aqui puedes ver tus instituciones vinculadas.',
+              title: title,
+              subtitle: subtitle,
               lightOnDark: true,
             ),
           ),

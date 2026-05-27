@@ -16,5 +16,11 @@ export const StudentCreateSchema = z.object({
 
 export const StudentUpdateSchema = StudentCreateSchema;
 
+export const StudentInviteExportSchema = z.object({
+  expiresAt: z.string().min(1, "La fecha de expiracion es obligatoria"),
+  maxUses: z.coerce.number().int("La cantidad debe ser entera").min(1, "Debe ser al menos 1"),
+});
+
 export type StudentCreateData = z.infer<typeof StudentCreateSchema>;
 export type StudentUpdateData = z.infer<typeof StudentUpdateSchema>;
+export type StudentInviteExportData = z.infer<typeof StudentInviteExportSchema>;

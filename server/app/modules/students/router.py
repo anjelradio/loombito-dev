@@ -1,6 +1,8 @@
 from uuid import UUID
+from io import BytesIO
 
 from fastapi import APIRouter, Query, Response, status
+from fastapi.responses import StreamingResponse
 
 from app.dependencies.auth import CurrentActor, DBSession
 from app.modules.students.schemas import (
@@ -9,10 +11,14 @@ from app.modules.students.schemas import (
     StudentCreate,
     StudentEvaluationGradeRowRead,
     StudentEvaluationGradeUpsert,
+    StudentInviteBulkExportRequest,
+    StudentJoinByCode,
+    StudentLinkedByUserRead,
+    StudentLinkedRead,
     StudentRead,
     StudentUpdate,
 )
-from app.modules.students.services import StudentService
+from app.modules.students.services import StudentParentInviteService, StudentService
 
 router = APIRouter(prefix="/students", tags=["Estudiantes"])
 
@@ -134,3 +140,34 @@ def unlink_student_from_course(
 ):
     StudentService(db).unlink_from_course(school_id, course_id, student_id, actor)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/schools/{school_id}/courses/{course_id}/invites/export")
+def export_student_invites_by_course(
+    school_id: UUID,
+    course_id: UUID,
+    db: DBSession,
+    payload: StudentInviteBulkExportRequest,
+    actor: CurrentActor,
+):
+    content, file_name, media_type = StudentParentInviteService(db).export_course_student_invites(
+        school_id,
+        course_id,
+        payload,
+        actor,
+    )
+    return StreamingResponse(
+        BytesIO(content),
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
+    )
+
+
+@router.post("/join", response_model=StudentLinkedRead)
+def join_student_with_code(db: DBSession, payload: StudentJoinByCode, actor: CurrentActor):
+    return StudentParentInviteService(db).join_student_by_code(payload, actor)
+
+
+@router.get("/by_user", response_model=list[StudentLinkedByUserRead])
+def list_linked_students_by_user(db: DBSession, actor: CurrentActor):
+    return StudentParentInviteService(db).list_linked_students_by_user(actor)
