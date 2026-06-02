@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/features/intelligence/presentation/providers/providers.dart';
 import 'package:mobile/features/intelligence/presentation/widgets/widgets.dart';
+import 'package:mobile/features/reports/reports.dart';
 import 'package:mobile/features/shared/shared.dart';
 
 class StudentClassificationScreen extends ConsumerStatefulWidget {
@@ -38,6 +39,19 @@ class _StudentClassificationScreenState
       SnackBar(
         content: Text(message),
         backgroundColor: error ? Colors.red.shade800 : const Color(0xFF1F476E),
+      ),
+    );
+  }
+
+  void _openReportSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => VoiceReportSheet(
+        schoolId: widget.schoolId,
+        assignmentId: widget.assignmentId,
+        termId: ref.read(studentClassificationProvider).selectedTermId,
       ),
     );
   }
@@ -98,13 +112,17 @@ class _StudentClassificationScreenState
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Clasificacion estudiantil',
+                        'Clasificacion',
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
                               color: const Color(0xFF0F2C4F),
                               fontWeight: FontWeight.w800,
                             ),
                       ),
+                    ),
+                    AppCircleIconButton(
+                      onPressed: _openReportSheet,
+                      icon: Icons.description_outlined,
                     ),
                   ],
                 ),

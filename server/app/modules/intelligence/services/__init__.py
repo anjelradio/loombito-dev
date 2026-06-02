@@ -1,4 +1,4 @@
 from .clusters import StudentClusterService
-from .ia import AttendanceAudioInterpreterService
+from .ia import AttendanceAudioInterpreterService, ClusterReportAudioInterpreterService
 
-__all__ = ["StudentClusterService", "AttendanceAudioInterpreterService"]
+__all__ = ["StudentClusterService", "AttendanceAudioInterpreterService", "ClusterReportAudioInterpreterService"]

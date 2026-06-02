@@ -12,6 +12,7 @@ class ReportType(str, Enum):
     ATTENDANCE = "attendance_report"
     EVALUATION_GRADEBOOK = "evaluation_gradebook_report"
     TERM_AVERAGE = "term_average_report"
+    CLUSTER_PERFORMANCE = "cluster_performance_report"
 
 
 class ReportFormat(str, Enum):

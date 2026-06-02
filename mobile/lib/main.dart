@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/config/config.dart';
+import 'package:mobile/features/shared/shared.dart';
 
 Future<void> main() async {
-  await Environment.initEnvironment();
   WidgetsFlutterBinding.ensureInitialized();
+  await Environment.initEnvironment();
+  await Firebase.initializeApp();
+  await FirebaseMessagingService().initialize();
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

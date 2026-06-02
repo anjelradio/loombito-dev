@@ -12,6 +12,7 @@ from app.modules.licenses.schemas import (
     StudentLicenseCreate,
     StudentLicenseRead,
     StudentLicenseReason,
+    StudentLicenseUpdate,
 )
 from app.modules.schools.repositories import SchoolRepository
 from app.modules.students.repositories import StudentParentRepository, StudentRepository
@@ -102,3 +103,47 @@ class LicenseService:
         self._ensure_parent_and_student(school_id, student_id, actor)
         rows = self.license.list_active_by_student(school_id, student_id)
         return [StudentLicenseRead.model_validate(row) for row in rows]
+
+    def update_student_license(
+        self,
+        school_id: UUID,
+        student_id: UUID,
+        license_id: UUID,
+        payload: StudentLicenseUpdate,
+        actor: CurrentActorContext,
+    ) -> StudentLicenseRead:
+        self._ensure_parent_and_student(school_id, student_id, actor)
+
+        row = self.license.get_active_by_id(license_id)
+        if not row:
+            raise HTTPException(status_code=404, detail="Licencia no encontrada")
+
+        if payload.start_date > payload.end_date:
+            raise HTTPException(status_code=422, detail="La fecha de inicio no puede ser mayor a la fecha de fin")
+
+        reason = self._validate_reason(payload.reason)
+
+        row.reason = reason
+        row.description = payload.description.strip()
+        row.start_date = payload.start_date
+        row.end_date = payload.end_date
+        self.license.update(row)
+        self.db.commit()
+        self.db.refresh(row)
+        return StudentLicenseRead.model_validate(row)
+
+    def delete_student_license(
+        self,
+        school_id: UUID,
+        student_id: UUID,
+        license_id: UUID,
+        actor: CurrentActorContext,
+    ) -> None:
+        self._ensure_parent_and_student(school_id, student_id, actor)
+
+        row = self.license.get_active_by_id(license_id)
+        if not row:
+            raise HTTPException(status_code=404, detail="Licencia no encontrada")
+
+        self.license.soft_delete(row)
+        self.db.commit()

@@ -40,4 +40,32 @@ class LicenseApi {
       },
     );
   }
+
+  Future<void> updateStudentLicense(
+    String schoolId,
+    String studentId,
+    String licenseId,
+    String reason,
+    String description,
+    String startDate,
+    String endDate,
+  ) async {
+    await dio.put(
+      '/licenses/schools/$schoolId/students/$studentId/$licenseId',
+      data: {
+        'reason': reason,
+        'description': description,
+        'start_date': startDate,
+        'end_date': endDate,
+      },
+    );
+  }
+
+  Future<void> deleteStudentLicense(
+    String schoolId,
+    String studentId,
+    String licenseId,
+  ) async {
+    await dio.delete('/licenses/schools/$schoolId/students/$studentId/$licenseId');
+  }
 }

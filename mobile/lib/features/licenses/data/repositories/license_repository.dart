@@ -27,4 +27,28 @@ class LicenseRepository {
       endDate,
     );
   }
+
+  Future<void> updateStudentLicense(
+    String schoolId,
+    String studentId,
+    String licenseId,
+    String reason,
+    String description,
+    String startDate,
+    String endDate,
+  ) {
+    return _licenseApi.updateStudentLicense(
+      schoolId,
+      studentId,
+      licenseId,
+      reason,
+      description,
+      startDate,
+      endDate,
+    );
+  }
+
+  Future<void> deleteStudentLicense(String schoolId, String studentId, String licenseId) {
+    return _licenseApi.deleteStudentLicense(schoolId, studentId, licenseId);
+  }
 }

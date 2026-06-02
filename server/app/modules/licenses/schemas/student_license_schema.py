@@ -21,6 +21,13 @@ class StudentLicenseCreate(SQLModel):
     end_date: date
 
 
+class StudentLicenseUpdate(SQLModel):
+    reason: str
+    description: str
+    start_date: date
+    end_date: date
+
+
 class StudentLicenseRead(SQLModel):
     id: UUID
     school_id: UUID

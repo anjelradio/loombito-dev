@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     )
     GEMINI_TIMEOUT_SEC: int = Field(default=30, env="GEMINI_TIMEOUT_SEC")
 
+    FIREBASE_CREDENTIALS_PATH: str = Field(default="", env="FIREBASE_CREDENTIALS_PATH")
+    FIREBASE_CREDENTIALS_JSON: str = Field(default="", env="FIREBASE_CREDENTIALS_JSON")
+    FIREBASE_PROJECT_ID: str = Field(default="", env="FIREBASE_PROJECT_ID")
+
     BACKUP_STORAGE_DIR: str = Field(default="storage/backups", env="BACKUP_STORAGE_DIR")
 
     MAX_LICENSES_PER_MONTH: int = Field(default=2, env="MAX_LICENSES_PER_MONTH")
@@ -54,6 +58,15 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+
+    @property
+    def DATABASE_URL_NORMALIZED(self) -> str:
+        url = self.DATABASE_URL
+        if url.startswith("postgres://"):
+            return "postgresql+psycopg://" + url[len("postgres://") :]
+        if url.startswith("postgresql://") and "+psycopg" not in url:
+            return "postgresql+psycopg://" + url[len("postgresql://") :]
+        return url
 
 
 settings = Settings()

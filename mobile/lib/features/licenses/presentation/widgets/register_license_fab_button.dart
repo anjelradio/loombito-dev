@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -85,30 +87,55 @@ class _RegisterLicenseFabButtonState extends ConsumerState<RegisterLicenseFabBut
 }
 
 class RegisterLicensePayload {
+  final String? licenseId;
   final String reason;
   final String description;
   final String startDate;
   final String endDate;
+  final String? attachmentImagePath;
 
   RegisterLicensePayload({
+    this.licenseId,
     required this.reason,
     required this.description,
     required this.startDate,
     required this.endDate,
+    this.attachmentImagePath,
   });
 }
 
 Future<RegisterLicensePayload?> showRegisterLicenseSheet(BuildContext context) {
+  return showRegisterLicenseSheetWithInitial(context);
+}
+
+Future<RegisterLicensePayload?> showRegisterLicenseSheetWithInitial(
+  BuildContext context, {
+  RegisterLicensePayload? initialPayload,
+  String title = 'Registrar licencia',
+  String submitText = 'Registrar licencia',
+}) {
   return showModalBottomSheet<RegisterLicensePayload>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => const _RegisterLicenseSheetContent(),
+    builder: (_) => _RegisterLicenseSheetContent(
+      initialPayload: initialPayload,
+      title: title,
+      submitText: submitText,
+    ),
   );
 }
 
 class _RegisterLicenseSheetContent extends StatefulWidget {
-  const _RegisterLicenseSheetContent();
+  final RegisterLicensePayload? initialPayload;
+  final String title;
+  final String submitText;
+
+  const _RegisterLicenseSheetContent({
+    this.initialPayload,
+    required this.title,
+    required this.submitText,
+  });
 
   @override
   State<_RegisterLicenseSheetContent> createState() => _RegisterLicenseSheetContentState();
@@ -116,16 +143,42 @@ class _RegisterLicenseSheetContent extends StatefulWidget {
 
 class _RegisterLicenseSheetContentState extends State<_RegisterLicenseSheetContent> {
   final TextEditingController _descriptionController = TextEditingController();
+  final CameraGalleryService _cameraGalleryService = CameraGalleryServiceImpl();
   String _reason = 'illness';
   String _startDate = '';
   String _endDate = '';
+  String? _licenseId;
+  String? _attachmentImagePath;
   String? _descriptionError;
   String? _dateError;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialPayload;
+    if (initial == null) return;
+    _licenseId = initial.licenseId;
+    _reason = initial.reason;
+    _startDate = initial.startDate;
+    _endDate = initial.endDate;
+    _attachmentImagePath = initial.attachmentImagePath;
+    _descriptionController.text = initial.description;
+  }
 
   @override
   void dispose() {
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAttachmentImage() async {
+    final imagePath = await _cameraGalleryService.selectPhoto();
+    if (!mounted || imagePath == null) return;
+    setState(() => _attachmentImagePath = imagePath);
+  }
+
+  void _removeAttachmentImage() {
+    setState(() => _attachmentImagePath = null);
   }
 
   Future<void> _pickDate({required bool start}) async {
@@ -161,10 +214,12 @@ class _RegisterLicenseSheetContentState extends State<_RegisterLicenseSheetConte
 
     Navigator.of(context).pop(
       RegisterLicensePayload(
+        licenseId: _licenseId,
         reason: _reason,
         description: description,
         startDate: _startDate,
         endDate: _endDate,
+        attachmentImagePath: _attachmentImagePath,
       ),
     );
   }
@@ -186,7 +241,7 @@ class _RegisterLicenseSheetContentState extends State<_RegisterLicenseSheetConte
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Registrar licencia',
+                  widget.title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: const Color(0xFF0F2C4F),
                     fontWeight: FontWeight.w800,
@@ -223,7 +278,7 @@ class _RegisterLicenseSheetContentState extends State<_RegisterLicenseSheetConte
                 CustomTextFormField(
                   label: 'Descripcion',
                   hint: 'Describe el motivo de la licencia.',
-                  initialValue: '',
+                  initialValue: _descriptionController.text,
                   onChanged: (value) => _descriptionController.text = value,
                   errorMessage: _descriptionError,
                 ),
@@ -257,6 +312,12 @@ class _RegisterLicenseSheetContentState extends State<_RegisterLicenseSheetConte
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFFEF4444)),
                     ),
                   ),
+                const SizedBox(height: 12),
+                _AttachmentImageCard(
+                  imagePath: _attachmentImagePath,
+                  onPickImage: _pickAttachmentImage,
+                  onRemoveImage: _removeAttachmentImage,
+                ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -271,7 +332,7 @@ class _RegisterLicenseSheetContentState extends State<_RegisterLicenseSheetConte
                     const SizedBox(width: 10),
                     Expanded(
                       child: CustomFilledButton(
-                        text: 'Registrar licencia',
+                        text: widget.submitText,
                         onPressed: _submit,
                       ),
                     ),
@@ -281,6 +342,98 @@ class _RegisterLicenseSheetContentState extends State<_RegisterLicenseSheetConte
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AttachmentImageCard extends StatelessWidget {
+  final String? imagePath;
+  final VoidCallback onPickImage;
+  final VoidCallback onRemoveImage;
+
+  const _AttachmentImageCard({
+    required this.imagePath,
+    required this.onPickImage,
+    required this.onRemoveImage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImage = (imagePath ?? '').isNotEmpty;
+    final fileName = hasImage ? imagePath!.split('/').last : null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFD8E5F2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Adjuntar imagen',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: const Color(0xFF1E3A5F),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            hasImage ? 'Imagen seleccionada.' : 'Agrega una imagen de respaldo para la licencia.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: const Color(0xFF4B5563),
+            ),
+          ),
+          if (hasImage) ...[
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.file(
+                File(imagePath!),
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              fileName ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF6A8CB2),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: CustomFilledButton(
+                  text: hasImage ? 'Cambiar imagen' : 'Adjuntar imagen',
+                  buttonColor: const Color(0xFFE4EBF4),
+                  textColor: const Color(0xFF1F476E),
+                  onPressed: onPickImage,
+                ),
+              ),
+              if (hasImage) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  child: CustomFilledButton(
+                    text: 'Quitar',
+                    buttonColor: const Color(0xFFFDECEC),
+                    textColor: const Color(0xFF9F2F2F),
+                    onPressed: onRemoveImage,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }

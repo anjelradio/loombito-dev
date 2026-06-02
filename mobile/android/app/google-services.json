@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "130805553587",
+    "project_id": "loombo-7b561",
+    "storage_bucket": "loombo-7b561.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:130805553587:android:a662fb7710c2d7e5ae93c6",
+        "android_client_info": {
+          "package_name": "com.example.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-5cdtqm0W_JNnCKcSGRb3nUELiuJ5yvA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

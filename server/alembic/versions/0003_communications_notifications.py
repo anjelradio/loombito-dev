@@ -1,6 +1,6 @@
 """add communications and notifications tables
 
-Revision ID: 0003_communications_notifications
+Revision ID: 0003_comm_notifications
 Revises: 0002_student_parent_invites
 Create Date: 2026-05-27 00:00:01.000000
 
@@ -13,7 +13,7 @@ from alembic import op
 
 
 # revision identifiers, used by Alembic.
-revision: str = "0003_communications_notifications"
+revision: str = "0003_comm_notifications"
 down_revision: Union[str, Sequence[str], None] = "0002_student_parent_invites"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

@@ -1,7 +1,7 @@
 """add student licenses table
 
 Revision ID: 0004_student_licenses
-Revises: 0003_communications_notifications
+Revises: 0003_comm_notifications
 Create Date: 2026-05-27 00:00:02.000000
 
 """
@@ -14,7 +14,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "0004_student_licenses"
-down_revision: Union[str, Sequence[str], None] = "0003_communications_notifications"
+down_revision: Union[str, Sequence[str], None] = "0003_comm_notifications"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

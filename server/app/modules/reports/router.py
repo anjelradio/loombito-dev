@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, File, HTTPException, UploadFile, Query
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 
@@ -88,5 +88,33 @@ def export_term_average_report(
     return StreamingResponse(
         BytesIO(content),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
+    )
+
+
+@router.post("/schools/{school_id}/assignments/{assignment_id}/terms/{term_id}/export/cluster-from-audio")
+async def export_cluster_report_from_audio(
+    school_id: UUID,
+    assignment_id: UUID,
+    term_id: UUID,
+    db: DBSession,
+    user: CurrentUser,
+    audio: UploadFile = File(...),
+):
+    audio_bytes = await audio.read()
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="El audio no contiene datos")
+
+    content, file_name, media_type = ReportService(db).export_cluster_performance_report_from_audio_pdf(
+        school_id=school_id,
+        assignment_id=assignment_id,
+        term_id=term_id,
+        audio_bytes=audio_bytes,
+        mime_type=audio.content_type or "audio/webm",
+        user_id=user.id,
+    )
+    return StreamingResponse(
+        BytesIO(content),
+        media_type=media_type,
         headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
     )

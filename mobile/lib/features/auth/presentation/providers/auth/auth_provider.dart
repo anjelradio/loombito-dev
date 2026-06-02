@@ -222,6 +222,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       authStatus: AuthStatus.authenticated,
       errorMessages: const [],
     );
+    await _syncPushToken();
+  }
+
+  Future<void> _syncPushToken() async {
+    try {
+      await PushTokenSyncService().syncStoredToken();
+    } catch (_) {
+      // Intentionally ignore token sync failures.
+    }
   }
 
   Future<void> logoutWithErrors(List<String> errorMessages) async {

@@ -24,18 +24,19 @@ if config.config_file_name is not None:
 
 
 load_dotenv()
-# DEV
-DATABASE_URL = os.getenv("DATABASE_URL")
 
 
-# PROD
-# raw_url = os.environ["DATABASE_URL"]
-# url = raw_url
-# if url.startswith("postgres//"):
-#     url = "postgresql+psycopg://" + url[len("postgres://") :]
-# elif url.startswith("postgresql://") and "+psycopg" not in url:
-#     url = "postgresql+psycopg://" + url[len("postgresql://") :]
-# DATABASE_URL = url
+def _normalize_database_url(url: str | None) -> str | None:
+    if not url:
+        return url
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg://" + url[len("postgres://") :]
+    if url.startswith("postgresql://") and "+psycopg" not in url:
+        return "postgresql+psycopg://" + url[len("postgresql://") :]
+    return url
+
+
+DATABASE_URL = _normalize_database_url(os.getenv("DATABASE_URL"))
 
 
 target_metadata = SQLModel.metadata

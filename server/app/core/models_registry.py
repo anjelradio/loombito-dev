@@ -14,7 +14,7 @@ from app.modules.academic.models import (  # noqa: F401
 )
 from app.modules.attendance.models import AttendanceRecord, AttendanceSession, AttendanceStatus  # noqa: F401
 from app.modules.auth.models import User  # noqa: F401
-from app.modules.communications.models import Notification, StudentCommunication  # noqa: F401
+from app.modules.communications.models import Notification, PushToken, StudentCommunication  # noqa: F401
 from app.modules.evaluations.models import (  # noqa: F401
     Evaluation,
     EvaluationGrade,

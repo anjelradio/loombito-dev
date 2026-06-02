@@ -1,4 +1,5 @@
 from uuid import UUID
+import logging
 
 from fastapi import HTTPException
 from sqlmodel import Session, select
@@ -20,11 +21,15 @@ from app.modules.communications.schemas import (
     TeacherCommunicationCourseStudentRead,
 )
 from app.modules.communications.services.notification_service import NotificationService
+from app.modules.communications.services.push_notification_service import PushNotificationService
 from app.modules.schools.models import SchoolRole
 from app.modules.schools.repositories import SchoolRepository, SchoolUserRepository
 from app.modules.students.repositories import CourseStudentRepository, StudentRepository
 from app.modules.system.models import AuditAction
 from app.modules.system.services import AuditLogger
+
+
+logger = logging.getLogger(__name__)
 
 
 class CommunicationService:
@@ -37,6 +42,7 @@ class CommunicationService:
         self.communication = StudentCommunicationRepository(db)
         self.notification = NotificationRepository(db)
         self.notification_service = NotificationService(db)
+        self.push_notification = PushNotificationService(db)
         self.audit_logger = AuditLogger(db)
 
     def _ensure_school_student_and_teacher(self, school_id: UUID, student_id: UUID, actor: CurrentActorContext):
@@ -170,6 +176,18 @@ class CommunicationService:
             actor_user_id=actor.user.id,
         )
 
+        try:
+            self.push_notification.send_to_student_parents(
+                school_id=school_id,
+                student_id=student_id,
+                title=row.title,
+                body=row.body,
+                event="created",
+                communication_id=row.id,
+            )
+        except Exception:
+            logger.exception("No se pudo enviar push de comunicacion creada")
+
         return StudentCommunicationRead.model_validate(row)
 
     def update_student_communication(
@@ -217,6 +235,18 @@ class CommunicationService:
             school_id=school_id,
             actor_user_id=actor.user.id,
         )
+
+        try:
+            self.push_notification.send_to_student_parents(
+                school_id=school_id,
+                student_id=row.student_id,
+                title=row.title,
+                body=row.body,
+                event="updated",
+                communication_id=row.id,
+            )
+        except Exception:
+            logger.exception("No se pudo enviar push de comunicacion actualizada")
 
         return StudentCommunicationRead.model_validate(row)
 

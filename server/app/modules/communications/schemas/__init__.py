@@ -6,6 +6,7 @@ from .communication_schema import (
     TeacherCommunicationCourseRead,
     TeacherCommunicationCourseStudentRead,
 )
+from .push_token_schema import PushTokenRead, PushTokenRegister
 
 __all__ = [
     "StudentCommunicationCreate",
@@ -14,4 +15,6 @@ __all__ = [
     "NotificationRead",
     "TeacherCommunicationCourseRead",
     "TeacherCommunicationCourseStudentRead",
+    "PushTokenRegister",
+    "PushTokenRead",
 ]

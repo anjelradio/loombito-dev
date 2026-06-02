@@ -11,10 +11,11 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from sqlmodel import Session
 
 from app.modules.reports.catalog import REPORT_CATALOG
-from app.modules.reports.models import ReportRun, ReportType
-from app.modules.reports.permissions import ensure_admin_or_owner_in_school
+from app.modules.reports.models import ReportFormat, ReportRun, ReportType
+from app.modules.reports.permissions import ensure_admin_or_owner_in_school, ensure_admin_owner_or_teacher_in_school
 from app.modules.reports.repositories import (
     AttendanceReportRepository,
+    ClusterPerformanceReportRepository,
     EvaluationReportRepository,
     ReportRunRepository,
     TermAverageReportRepository,
@@ -28,6 +29,7 @@ from app.modules.reports.schemas import (
     ReportRunRead,
     TermAverageReportGenerate,
 )
+from app.modules.intelligence.services import ClusterReportAudioInterpreterService
 from app.modules.schools.repositories import SchoolRepository, SchoolUserRepository
 
 
@@ -40,6 +42,7 @@ class ReportService:
         self.attendance_report = AttendanceReportRepository(db)
         self.evaluation_report = EvaluationReportRepository(db)
         self.term_average_report = TermAverageReportRepository(db)
+        self.cluster_performance_report = ClusterPerformanceReportRepository(db)
 
     # Resuelve rango de fechas efectivo para asistencia segun reglas de negocio.
     def _resolve_attendance_date_range(
@@ -74,6 +77,12 @@ class ReportService:
         if not school:
             raise HTTPException(status_code=404, detail="Escuela no encontrada")
         ensure_admin_or_owner_in_school(self.school_user, user_id, school_id)
+
+    def _ensure_context_teacher_allowed(self, school_id: UUID, user_id: UUID) -> None:
+        school = self.school.get(school_id)
+        if not school:
+            raise HTTPException(status_code=404, detail="Escuela no encontrada")
+        ensure_admin_owner_or_teacher_in_school(self.school_user, user_id, school_id)
 
     # Devuelve catalogo estatico de tipos de reporte con filtros y columnas permitidas.
     def get_catalog(self, school_id: UUID, user_id: UUID) -> list[ReportCatalogItemRead]:
@@ -604,3 +613,89 @@ class ReportService:
             )
             for row in rows
         ]
+
+    def export_cluster_performance_report_from_audio_pdf(
+        self,
+        school_id: UUID,
+        assignment_id: UUID,
+        term_id: UUID,
+        audio_bytes: bytes,
+        mime_type: str,
+        user_id: UUID,
+    ) -> tuple[bytes, str, str]:
+        self._ensure_context_teacher_allowed(school_id, user_id)
+
+        parsed = ClusterReportAudioInterpreterService().parse_to_cluster_report_filters(audio_bytes, mime_type)
+        cluster_label = parsed.get("cluster_label") or "alto_rendimiento"
+        columns = parsed.get("columns") or [
+            "student_last_name",
+            "student_first_name",
+            "final_score",
+            "absence_count",
+            "present_count",
+        ]
+        summary = parsed.get("summary")
+
+        self._validate_columns(ReportType.CLUSTER_PERFORMANCE, columns)
+
+        assignment_meta = self.cluster_performance_report.get_assignment_metadata(school_id, assignment_id)
+        if not assignment_meta:
+            raise HTTPException(status_code=404, detail="Asignacion no encontrada")
+        _, course_name, subject_name = assignment_meta
+
+        run = self.cluster_performance_report.get_active_cluster_run(school_id, assignment_id, term_id)
+        if not run:
+            raise HTTPException(status_code=404, detail="No existe una clasificacion activa. Recalcula el clustering primero")
+
+        rows = self.cluster_performance_report.list_rows_by_run_and_cluster(
+            school_id=school_id,
+            assignment_id=assignment_id,
+            term_id=term_id,
+            run_id=run.id,
+            cluster_label=cluster_label,
+        )
+
+        dataset = []
+        for (
+            _student_id,
+            student_last_name,
+            student_first_name,
+            row_cluster_label,
+            final_score,
+            attendance_rate,
+            present_count,
+            absence_count,
+            license_count,
+            total_sessions,
+        ) in rows:
+            item = {
+                "student_last_name": student_last_name,
+                "student_first_name": student_first_name,
+                "cluster_label": row_cluster_label,
+                "final_score": round(float(final_score), 2) if final_score is not None else None,
+                "attendance_rate": round(float(attendance_rate), 2) if attendance_rate is not None else None,
+                "present_count": int(present_count or 0),
+                "absence_count": int(absence_count or 0),
+                "license_count": int(license_count or 0),
+                "total_sessions": int(total_sessions or 0),
+            }
+            dataset.append({column: item.get(column) for column in columns})
+
+        self._register_run(
+            school_id=school_id,
+            report_type=ReportType.CLUSTER_PERFORMANCE,
+            filters_json={
+                "assignment_id": str(assignment_id),
+                "term_id": str(term_id),
+                "cluster_label": cluster_label,
+                "cluster_run_id": str(run.id),
+            },
+            columns_json=columns,
+            report_format=ReportFormat.PDF,
+            summary=summary,
+        )
+
+        cluster_suffix = cluster_label if cluster_label != "all" else "todos"
+        file_name = f"reporte_clasificacion_{cluster_suffix}_{course_name}_{subject_name}.pdf".replace(" ", "_").lower()
+        content = self._build_pdf_bytes(columns, dataset, "Reporte de clasificacion por rendimiento", summary)
+        return content, file_name, "application/pdf"

@@ -14,6 +14,13 @@ class StudentLicenseRepository:
         self.db.add(row)
         return row
 
+    def get_active_by_id(self, license_id: UUID) -> StudentLicense | None:
+        query = select(StudentLicense).where(
+            StudentLicense.id == license_id,
+            StudentLicense.state == True,
+        )
+        return self.db.exec(query).first()
+
     def list_active_by_student(self, school_id: UUID, student_id: UUID) -> list[StudentLicense]:
         query = (
             select(StudentLicense)
@@ -41,3 +48,14 @@ class StudentLicenseRepository:
             StudentLicense.created_date < month_end,
         )
         return len(self.db.exec(query).all())
+
+    def update(self, row: StudentLicense) -> StudentLicense:
+        row.modified_date = datetime.utcnow()
+        self.db.add(row)
+        return row
+
+    def soft_delete(self, row: StudentLicense) -> StudentLicense:
+        row.state = False
+        row.deleted_date = datetime.utcnow()
+        self.db.add(row)
+        return row

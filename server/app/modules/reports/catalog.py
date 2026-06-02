@@ -57,4 +57,21 @@ REPORT_CATALOG = [
         ],
         "allowed_formats": [ReportFormat.XLSX, ReportFormat.PDF],
     },
+    {
+        "report_type": ReportType.CLUSTER_PERFORMANCE,
+        "label": "Reporte de rendimiento por clasificacion",
+        "allowed_filters": ["assignment_id", "term_id", "cluster_label"],
+        "allowed_columns": [
+            "student_last_name",
+            "student_first_name",
+            "cluster_label",
+            "final_score",
+            "attendance_rate",
+            "present_count",
+            "absence_count",
+            "license_count",
+            "total_sessions",
+        ],
+        "allowed_formats": [ReportFormat.PDF],
+    },
 ]

@@ -5,13 +5,15 @@ from fastapi import APIRouter, Query, Response, status
 from app.dependencies.auth import CurrentActor, DBSession
 from app.modules.communications.schemas import (
     NotificationRead,
+    PushTokenRead,
+    PushTokenRegister,
     StudentCommunicationCreate,
     StudentCommunicationRead,
     StudentCommunicationUpdate,
     TeacherCommunicationCourseRead,
     TeacherCommunicationCourseStudentRead,
 )
-from app.modules.communications.services import CommunicationService
+from app.modules.communications.services import CommunicationService, PushTokenService
 
 router = APIRouter(prefix="/communications", tags=["Comunicaciones"])
 
@@ -95,6 +97,15 @@ def delete_student_communication(
 ):
     CommunicationService(db).delete_student_communication(school_id, communication_id, actor)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/push-tokens", response_model=PushTokenRead)
+def register_push_token(
+    payload: PushTokenRegister,
+    db: DBSession,
+    actor: CurrentActor,
+):
+    return PushTokenService(db).register_token(actor, payload)
 
 
 @router.get("/notifications", response_model=list[NotificationRead])

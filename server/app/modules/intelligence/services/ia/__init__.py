@@ -1,3 +1,4 @@
 from .attendance_audio_interpreter_service import AttendanceAudioInterpreterService
+from .cluster_report_audio_interpreter_service import ClusterReportAudioInterpreterService
 
-__all__ = ["AttendanceAudioInterpreterService"]
+__all__ = ["AttendanceAudioInterpreterService", "ClusterReportAudioInterpreterService"]
