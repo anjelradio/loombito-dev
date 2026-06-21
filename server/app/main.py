@@ -17,6 +17,7 @@ from app.modules.schools.router import router as school_router
 from app.modules.students.router import router as student_router
 from app.modules.subscriptions.router import router as subscriptions_router
 from app.modules.system.router import router as system_router
+from app.modules.payments.router import router as payments_router
 
 load_dotenv()
 
@@ -66,3 +67,5 @@ app.include_router(system_router, prefix="/api")
 app.include_router(communications_router, prefix="/api")
 
 app.include_router(licenses_router, prefix="/api")
+
+app.include_router(payments_router, prefix="/api")

@@ -89,6 +89,63 @@ class StudentClusterRepository:
         )
         return self.db.exec(query).all()
 
+    def list_all_attendance_records_for_student(self, school_id: UUID, student_id: UUID):
+        query = (
+            select(AttendanceRecord.status_id)
+            .join(AttendanceSession, AttendanceSession.id == AttendanceRecord.attendance_session_id)
+            .where(
+                AttendanceRecord.school_id == school_id,
+                AttendanceRecord.student_id == student_id,
+                AttendanceRecord.state == True,
+                AttendanceSession.school_id == school_id,
+                AttendanceSession.state == True,
+            )
+        )
+        return self.db.exec(query).all()
+
+    def list_all_final_scores_for_student(self, school_id: UUID, student_id: UUID):
+        query = select(TermSubjectAverage.final_score).where(
+            TermSubjectAverage.school_id == school_id,
+            TermSubjectAverage.student_id == student_id,
+            TermSubjectAverage.state == True,
+        )
+        return self.db.exec(query).all()
+
+    def get_subject_performance_for_student(self, school_id: UUID, student_id: UUID):
+        from app.modules.academic.models import Assignment, CourseSubject, Subject
+        from sqlalchemy.sql import func
+        
+        query = (
+            select(Subject.name, func.avg(TermSubjectAverage.final_score).label("average"))
+            .join(Assignment, Assignment.id == TermSubjectAverage.assignment_id)
+            .join(CourseSubject, CourseSubject.id == Assignment.course_subject_id)
+            .join(Subject, Subject.id == CourseSubject.subject_id)
+            .where(
+                TermSubjectAverage.school_id == school_id,
+                TermSubjectAverage.student_id == student_id,
+                TermSubjectAverage.state == True,
+                Assignment.school_id == school_id,
+                Assignment.state == True,
+            )
+            .group_by(Subject.name)
+        )
+        return self.db.exec(query).all()
+
+    def get_latest_cluster_label_for_student(self, school_id: UUID, student_id: UUID) -> str | None:
+        from sqlalchemy import desc
+        query = (
+            select(StudentClusterResult.cluster_label)
+            .join(StudentClusterRun, StudentClusterRun.id == StudentClusterResult.run_id)
+            .where(
+                StudentClusterRun.school_id == school_id,
+                StudentClusterResult.student_id == student_id,
+                StudentClusterResult.state == True,
+            )
+            .order_by(desc(StudentClusterResult.created_date))
+            .limit(1)
+        )
+        return self.db.exec(query).first()
+
     def deactivate_active_runs(self, school_id: UUID, assignment_id: UUID, term_id: UUID) -> None:
         query = select(StudentClusterRun).where(
             StudentClusterRun.school_id == school_id,

@@ -25,4 +25,10 @@ class IntelligenceRepository {
   ) {
     return _api.recalculateStudentClusters(schoolId, assignmentId, termId);
   }
+  Future<StudentStatistics> getStudentStatistics(
+    String schoolId,
+    String studentId,
+  ) {
+    return _api.getStudentStatistics(schoolId, studentId);
+  }
 }

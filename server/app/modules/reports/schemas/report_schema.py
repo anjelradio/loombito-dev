@@ -70,3 +70,9 @@ class TermAverageReportGenerate(SQLModel):
     columns: list[str]
     format: ReportFormat = ReportFormat.XLSX
     summary: str | None = None
+
+class BoletinReportGenerate(SQLModel):
+    course_id: UUID
+    student_id: UUID
+    format: ReportFormat = ReportFormat.PDF
+    summary: str | None = None

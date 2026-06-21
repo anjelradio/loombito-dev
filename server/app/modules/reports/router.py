@@ -12,6 +12,7 @@ from app.modules.reports.schemas import (
     ReportCatalogItemRead,
     ReportRunRead,
     TermAverageReportGenerate,
+    BoletinReportGenerate,
 )
 from app.modules.reports.services import ReportService
 from app.modules.reports.models import ReportType
@@ -88,6 +89,35 @@ def export_term_average_report(
     return StreamingResponse(
         BytesIO(content),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
+    )
+
+
+@router.post("/schools/{school_id}/export/boletin")
+def export_student_boletin_report(
+    school_id: UUID,
+    payload: BoletinReportGenerate,
+    db: DBSession,
+    user: CurrentUser,
+):
+    content, file_name, media_type = ReportService(db).export_boletin_report_pdf(school_id, payload, user.id)
+    return StreamingResponse(
+        BytesIO(content),
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
+    )
+
+
+@router.post("/parents/students/{student_id}/export/boletin")
+def export_student_boletin_report_for_parent(
+    student_id: UUID,
+    db: DBSession,
+    user: CurrentUser,
+):
+    content, file_name, media_type = ReportService(db).export_boletin_report_pdf_for_parent(student_id, user.id)
+    return StreamingResponse(
+        BytesIO(content),
+        media_type=media_type,
         headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
     )
 

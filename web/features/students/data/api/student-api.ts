@@ -151,6 +151,26 @@ export const studentApi = {
     });
   },
 
+  async getStudentById(
+    schoolId: string,
+    studentId: string,
+  ): Promise<ApiResult<Student>> {
+    const token = await getToken();
+    if (!token) {
+      return errorResult("No autorizado");
+    }
+
+    return apiRequestJson({
+      url: `${baseUrl}/schools/${schoolId}/students/${studentId}`,
+      method: "GET",
+      token,
+      cache: "no-store",
+      fallbackMessage: "No se pudo obtener el estudiante.",
+      responseSchema: StudentResponseSchema,
+      mapData: toStudentEntity,
+    });
+  },
+
   async createStudentInCourse(
     schoolId: string,
     courseId: string,

@@ -30,4 +30,13 @@ class ReportsApi {
 
     return List<int>.from(response.data);
   }
+  Future<List<int>> exportStudentBoletinForParent({
+    required String studentId,
+  }) async {
+    final response = await dio.post(
+      '/reports/parents/students/$studentId/export/boletin',
+    );
+
+    return List<int>.from(response.data);
+  }
 }

@@ -105,6 +105,16 @@ def list_students_by_course(
     )
 
 
+@router.get("/schools/{school_id}/students/{student_id}", response_model=StudentRead)
+def get_student(
+    school_id: UUID,
+    student_id: UUID,
+    db: DBSession,
+    actor: CurrentActor,
+):
+    return StudentService(db).get(school_id, student_id, actor.user.id)
+
+
 @router.post("/schools/{school_id}/courses/{course_id}", response_model=StudentRead)
 def create_student_in_course(
     school_id: UUID,

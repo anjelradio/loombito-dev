@@ -107,6 +107,13 @@ class StudentService:
             has_next=current_page < total_pages if total_pages > 0 else False,
         )
 
+    def get(self, school_id: UUID, student_id: UUID, user_id: UUID) -> StudentRead:
+        self._ensure_school_and_permissions(school_id, user_id)
+        student = self.student.get_active_by_id_in_school(school_id, student_id)
+        if not student:
+            raise HTTPException(status_code=404, detail="Estudiante no encontrado")
+        return StudentRead.model_validate(student)
+
     # Crea un estudiante nuevo o vincula uno existente al curso.
     def create_in_course(
         self,

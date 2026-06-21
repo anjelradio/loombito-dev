@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Header, HTTPException, Query
 
 from app.dependencies.auth import CurrentUser, DBSession
 from app.modules.system.models import AuditScope
@@ -84,3 +84,28 @@ def restore_school_backup(
 )
 def delete_school_backup(school_id: UUID, backup_id: UUID, db: DBSession, user: CurrentUser):
     return BackupService(db).delete_school_backup(school_id, backup_id, user)
+
+
+@router.post(
+    "/backups/cron/generate-all",
+    status_code=200,
+    tags=["Cron Jobs"],
+)
+def cron_generate_all_backups(db: DBSession, authorization: str | None = Header(None)):
+    """
+    Endpoint intended to be called by a CRON job (e.g. cron-job.org).
+    Generates an automatic backup for every active school in the system.
+    Validates the request using the JWT_SECRET as a Bearer token.
+
+    Suggested cron expression (every 2 days at midnight UTC):
+        0 0 */2 * *
+    """
+    from app.core.config import settings
+    expected_token = f"Bearer {settings.JWT_SECRET}"
+
+    if authorization != expected_token:
+        raise HTTPException(status_code=401, detail="Unauthorized CRON caller")
+
+    result = BackupService(db).create_all_schools_backup_cron()
+    return {"message": "Automatic backup generation completed", "data": result}
+

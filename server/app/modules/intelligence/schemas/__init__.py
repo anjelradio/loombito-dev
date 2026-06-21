@@ -3,9 +3,11 @@ from .clusters import (
     StudentClusterRowRead,
     StudentClusterSnapshotRead,
 )
+from .statistics import StudentStatisticsResponse
 
 __all__ = [
-    "StudentClusterRowRead",
     "StudentClusterSnapshotRead",
+    "StudentClusterRowRead",
     "StudentClusterRecalculateSummaryRead",
+    "StudentStatisticsResponse",
 ]

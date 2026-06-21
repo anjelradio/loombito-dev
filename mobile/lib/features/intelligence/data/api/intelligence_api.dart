@@ -49,4 +49,15 @@ class IntelligenceApi {
       Map<String, dynamic>.from(response.data),
     );
   }
+  Future<StudentStatistics> getStudentStatistics(
+    String schoolId,
+    String studentId,
+  ) async {
+    final response = await dio.get(
+      '/intelligence/schools/$schoolId/students/$studentId/statistics',
+    );
+    return IntelligenceMapper.studentStatisticsFromJson(
+      Map<String, dynamic>.from(response.data),
+    );
+  }
 }

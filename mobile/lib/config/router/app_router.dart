@@ -11,6 +11,7 @@ import 'package:mobile/features/introduction/tutorial.dart';
 import 'package:mobile/features/licenses/licenses.dart';
 import 'package:mobile/features/schools/schools.dart';
 import 'package:mobile/features/students/students.dart';
+import 'package:mobile/features/payments/payments.dart';
 
 final goRouterProvider = Provider((ref) {
   final goRouterNotifier = ref.read(goRouterNotifierProvider);
@@ -158,6 +159,51 @@ final goRouterProvider = Provider((ref) {
             schoolId: schoolId,
             studentId: studentId,
             studentName: extras?['studentName']?.toString(),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/schools/:schoolId/students/:studentId/debts',
+        builder: (context, state) {
+          final schoolId = state.pathParameters['schoolId'] ?? '';
+          final studentId = state.pathParameters['studentId'] ?? '';
+          final payload = state.extra;
+          final extras = payload is Map<String, dynamic> ? payload : null;
+
+          return StudentDebtsScreen(
+            schoolId: schoolId,
+            studentId: studentId,
+            studentName: extras?['studentName']?.toString() ?? 'Estudiante',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/schools/:schoolId/students/:studentId/payments',
+        builder: (context, state) {
+          final schoolId = state.pathParameters['schoolId'] ?? '';
+          final studentId = state.pathParameters['studentId'] ?? '';
+          final payload = state.extra;
+          final extras = payload is Map<String, dynamic> ? payload : null;
+
+          return StudentPaymentsScreen(
+            schoolId: schoolId,
+            studentId: studentId,
+            studentName: extras?['studentName']?.toString() ?? 'Estudiante',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/schools/:schoolId/students/:studentId/performance',
+        builder: (context, state) {
+          final schoolId = state.pathParameters['schoolId'] ?? '';
+          final studentId = state.pathParameters['studentId'] ?? '';
+          final payload = state.extra;
+          final extras = payload is Map<String, dynamic> ? payload : null;
+
+          return StudentPerformanceScreen(
+            schoolId: schoolId,
+            studentId: studentId,
+            studentName: extras?['studentName']?.toString() ?? 'Estudiante',
           );
         },
       ),

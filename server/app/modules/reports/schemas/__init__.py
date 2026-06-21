@@ -6,6 +6,7 @@ from .report_schema import (
     ReportCatalogItemRead,
     ReportRunRead,
     TermAverageReportGenerate,
+    BoletinReportGenerate,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "AttendanceReportGenerateRead",
     "EvaluationReportGenerate",
     "TermAverageReportGenerate",
+    "BoletinReportGenerate",
 ]

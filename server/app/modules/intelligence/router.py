@@ -11,10 +11,47 @@ from app.modules.reports.services import ReportService
 from app.modules.intelligence.schemas import (
     StudentClusterRecalculateSummaryRead,
     StudentClusterSnapshotRead,
+    StudentStatisticsResponse,
 )
-from app.modules.intelligence.services import AttendanceAudioInterpreterService, StudentClusterService
+from app.modules.intelligence.services import AttendanceAudioInterpreterService, StudentClusterService, StudentStatisticsService
+from app.modules.intelligence.services.regressions.student_risk_service import StudentRiskService
+from app.core.config import settings
+from fastapi import Header, status
 
 router = APIRouter(prefix="/intelligence", tags=["Intelligence"])
+
+@router.get(
+    "/schools/{school_id}/students/{student_id}/statistics",
+    response_model=StudentStatisticsResponse,
+)
+def get_student_performance_statistics(
+    school_id: UUID,
+    student_id: UUID,
+    db: DBSession,
+    actor: CurrentActor,
+):
+    service = StudentStatisticsService(db)
+    return service.get_student_statistics(school_id, student_id, actor.user.id)
+
+@router.post(
+    "/cron/recalculate-all",
+    status_code=status.HTTP_200_OK,
+    tags=["Cron Jobs"],
+)
+def cron_recalculate_all_intelligence(db: DBSession, authorization: str | None = Header(None)):
+    """
+    Endpoint intended to be called by a CRON job (e.g. cron-job.org).
+    Validates a secret token.
+    """
+    secret = settings.JWT_SECRET
+    expected_token = f"Bearer {secret}"
+    
+    if authorization != expected_token:
+        raise HTTPException(status_code=401, detail="Unauthorized CRON caller")
+    
+    service = StudentRiskService(db)
+    result = service.recalculate_all_global()
+    return {"message": "Global intelligence recalculation completed", "data": result}
 
 
 @router.get(

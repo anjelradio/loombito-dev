@@ -62,6 +62,11 @@ class SchoolRepository:
         self.db.add(school)
         return school
 
+    # Lista todas las escuelas activas del sistema (uso exclusivo de cron jobs / tareas internas).
+    def list_all_active(self) -> list[School]:
+        query = select(School).where(School.state == True).order_by(School.created_date.asc())
+        return self.db.exec(query).all()
+
     # Lista escuelas activas asociadas al usuario junto con su rol.
     def list_by_user_id(self, user_id: UUID):
         query = (

@@ -19,6 +19,7 @@ from app.modules.reports.repositories import (
     EvaluationReportRepository,
     ReportRunRepository,
     TermAverageReportRepository,
+    BoletinReportRepository,
 )
 from app.modules.reports.schemas import (
     AttendanceReportGenerate,
@@ -28,6 +29,7 @@ from app.modules.reports.schemas import (
     ReportCatalogItemRead,
     ReportRunRead,
     TermAverageReportGenerate,
+    BoletinReportGenerate,
 )
 from app.modules.intelligence.services import ClusterReportAudioInterpreterService
 from app.modules.schools.repositories import SchoolRepository, SchoolUserRepository
@@ -43,6 +45,7 @@ class ReportService:
         self.evaluation_report = EvaluationReportRepository(db)
         self.term_average_report = TermAverageReportRepository(db)
         self.cluster_performance_report = ClusterPerformanceReportRepository(db)
+        self.boletin_report = BoletinReportRepository(db)
 
     # Resuelve rango de fechas efectivo para asistencia segun reglas de negocio.
     def _resolve_attendance_date_range(
@@ -698,4 +701,123 @@ class ReportService:
         cluster_suffix = cluster_label if cluster_label != "all" else "todos"
         file_name = f"reporte_clasificacion_{cluster_suffix}_{course_name}_{subject_name}.pdf".replace(" ", "_").lower()
         content = self._build_pdf_bytes(columns, dataset, "Reporte de clasificacion por rendimiento", summary)
+        return content, file_name, "application/pdf"
+
+    def export_boletin_report_pdf(
+        self,
+        school_id: UUID,
+        payload: BoletinReportGenerate,
+        user_id: UUID,
+    ) -> tuple[bytes, str, str]:
+        self._ensure_context(school_id, user_id)
+        return self._generate_boletin(school_id, payload.course_id, payload.student_id, payload.summary)
+
+    def export_boletin_report_pdf_for_parent(
+        self,
+        student_id: UUID,
+        user_id: UUID,
+    ) -> tuple[bytes, str, str]:
+        from app.modules.students.repositories.student_parent_repository import StudentParentRepository
+        from app.modules.students.models import Student
+        from app.modules.students.models import CourseStudent
+        from app.modules.academic.models import Course
+        from sqlmodel import select
+
+        link = StudentParentRepository(self.db).get_active_by_user_and_student(user_id, student_id)
+        if not link:
+            raise HTTPException(status_code=403, detail="No tienes acceso a este estudiante")
+
+        student = self.db.get(Student, student_id)
+        if not student:
+            raise HTTPException(status_code=404, detail="Estudiante no encontrado")
+
+        query = (
+            select(Course.id)
+            .join(CourseStudent, CourseStudent.course_id == Course.id)
+            .where(
+                CourseStudent.student_id == student_id,
+                CourseStudent.state == True,
+                Course.state == True,
+            )
+            .order_by(CourseStudent.created_date.desc())
+        )
+        course_id = self.db.exec(query).first()
+        if not course_id:
+            raise HTTPException(status_code=404, detail="El estudiante no tiene curso asignado")
+
+        return self._generate_boletin(student.school_id, course_id, student_id, None)
+
+    def _generate_boletin(
+        self,
+        school_id: UUID,
+        course_id: UUID,
+        student_id: UUID,
+        summary: str | None,
+    ) -> tuple[bytes, str, str]:
+        course_meta = self.boletin_report.get_course_metadata(school_id, course_id)
+        if not course_meta:
+            raise HTTPException(status_code=404, detail="Curso no encontrado")
+        course_name, level_name = course_meta
+
+        student_meta = self.boletin_report.get_student_metadata(school_id, student_id)
+        if not student_meta:
+            raise HTTPException(status_code=404, detail="Estudiante no encontrado")
+        student_first_name, student_last_name, student_birth_date = student_meta
+
+        terms = self.boletin_report.list_active_terms(school_id)
+        assignments = self.boletin_report.list_assignments_by_course(school_id, course_id)
+        averages = self.boletin_report.list_student_averages_by_course(school_id, course_id, student_id)
+
+        avg_lookup = {}
+        for avg_assignment_id, term_id, final_score in averages:
+            if avg_assignment_id not in avg_lookup:
+                avg_lookup[avg_assignment_id] = {}
+            avg_lookup[avg_assignment_id][term_id] = final_score
+
+        columns = ["Asignatura"]
+        for term_id, term_name in terms:
+            columns.append(term_name)
+        columns.append("Promedio Anual")
+
+        from app.modules.reports.services.boletin_pdf_builder import BoletinPdfBuilder
+
+        school_name = self.boletin_report.get_school_name(school_id)
+        full_name = f"{student_last_name} {student_first_name}"
+        
+        builder = BoletinPdfBuilder(
+            school_name=school_name,
+            course_name=course_name,
+            level_name=level_name,
+            student_name=full_name,
+            birth_date=student_birth_date,
+            terms=[t[1] for t in terms]
+        )
+
+        for assignment_id, subject_name in assignments:
+            term_scores = []
+            annual_sum = 0
+            term_count = len(terms)
+            for term_id, term_name in terms:
+                score = avg_lookup.get(assignment_id, {}).get(term_id, 0)
+                val = float(score) if score is not None else 0
+                term_scores.append(val)
+                annual_sum += val
+            
+            annual_avg = annual_sum / term_count if term_count > 0 else 0
+            builder.add_row(subject_name, term_scores, annual_avg)
+
+        self._register_run(
+            school_id=school_id,
+            report_type=ReportType.BOLETIN,
+            filters_json={
+                "course_id": str(course_id),
+                "student_id": str(student_id),
+            },
+            columns_json=columns,
+            report_format=ReportFormat.PDF,
+            summary=summary,
+        )
+
+        content = builder.build()
+        file_name = f"boletin_{student_last_name}_{student_first_name}.pdf".replace(" ", "_").lower()
         return content, file_name, "application/pdf"

@@ -18,4 +18,9 @@ class ReportsRepository {
       audioPath: audioPath,
     );
   }
+  Future<List<int>> exportStudentBoletinForParent({
+    required String studentId,
+  }) {
+    return _api.exportStudentBoletinForParent(studentId: studentId);
+  }
 }

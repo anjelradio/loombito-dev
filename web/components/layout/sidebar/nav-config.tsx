@@ -23,7 +23,18 @@ const reportsNavigation = {
   items: [
     { title: "Asistencias", url: "academico/reportes/asistencias" },
     { title: "Evaluaciones", url: "academico/reportes/evaluaciones" },
-    { title: "Promedios", url: "academico/reportes/promedios" },
+    { title: "Boletines", url: "academico/reportes/boletines" },
+  ],
+};
+
+const paymentsNavigation = {
+  title: "Pagos",
+  url: "#",
+  icon: <BookAIcon />,
+  isActive: true,
+  items: [
+    { title: "Conceptos de pago", url: "pagos/conceptos" },
+    { title: "Deudas y Pagos", url: "pagos/deudas" },
   ],
 };
 
@@ -52,11 +63,13 @@ export const navigationByRole = {
     },
     academicNavigation,
     reportsNavigation,
+    paymentsNavigation,
   ],
 
   admin: [
     academicNavigation,
     reportsNavigation,
+    paymentsNavigation,
   ],
 
   teacher: [
