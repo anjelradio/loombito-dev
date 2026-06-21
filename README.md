@@ -126,9 +126,3 @@ Dentro debes colocar la URL del backend (API).
 - Si algo falla, revisa primero las variables de entorno.
 
 ---
-
-# 📩 Soporte
-
-Si tienes problemas en la instalación o configuración:
-
-👉 Contáctame directamente.
