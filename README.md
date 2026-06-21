@@ -1,4 +1,4 @@
-# 🚀 Proyecto - Guía de Instalación
+#  Proyecto - Guía de Instalación
 
 Este proyecto está dividido en dos partes:
 
@@ -9,7 +9,7 @@ Sigue los pasos cuidadosamente para configurar todo correctamente.
 
 ---
 
-# 📦 Requisitos Previos
+#  Requisitos Previos
 
 Antes de comenzar, asegúrate de tener instalado:
 
