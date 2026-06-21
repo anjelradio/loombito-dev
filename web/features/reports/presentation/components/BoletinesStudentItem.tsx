@@ -24,7 +24,7 @@ export default function BoletinesStudentItem({ student, courseId, schoolId }: Pr
       appToast.dismiss();
       
       if (!result.ok) {
-        appToast.error(result.error || "Hubo un error al generar el boletín");
+        appToast.error(result.errors?.[0] || "Hubo un error al generar el boletín");
         return;
       }
 
