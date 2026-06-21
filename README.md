@@ -125,10 +125,4 @@ Dentro debes colocar la URL del backend (API).
 - Verifica que el puerto del backend esté accesible desde el frontend.
 - Si algo falla, revisa primero las variables de entorno.
 
----
 
-# 📩 Soporte
-
-Si tienes problemas en la instalación o configuración:
-
-👉 Contáctame directamente.
