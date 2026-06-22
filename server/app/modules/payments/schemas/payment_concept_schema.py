@@ -24,7 +24,7 @@ class PaymentConceptUpdate(SQLModel):
     state: Optional[bool] = None
 
 
-# Esquema de lectura para concepto de pago
+# Lectura para concepto de pago
 class PaymentConceptRead(PaymentConceptBase):
     id: UUID
     school_id: UUID

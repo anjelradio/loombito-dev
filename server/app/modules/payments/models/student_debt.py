@@ -8,7 +8,7 @@ from sqlmodel import Field
 from app.core.base_model import UUIDBaseModel
 
 
-# Estados posibles de una deuda estudiantil
+# Estados posibles de una deuda
 class DebtStatus(str, Enum):
     PENDING = "PENDING" #PENDIENTE
     PAID = "PAID" #PAGADO
