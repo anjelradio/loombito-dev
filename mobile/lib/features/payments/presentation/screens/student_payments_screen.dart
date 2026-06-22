@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/payments/presentation/providers/student_payments_provider.dart';
 
+// Pantalla que muestra el historial de pagos de un estudiante
 class StudentPaymentsScreen extends ConsumerWidget {
   final String schoolId;
   final String studentId;
@@ -14,6 +15,7 @@ class StudentPaymentsScreen extends ConsumerWidget {
     required this.studentName,
   });
 
+  // Formatea una fecha a formato legible en español
   String _formatDate(DateTime date) {
     const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
     final day = date.day.toString().padLeft(2, '0');
@@ -25,6 +27,7 @@ class StudentPaymentsScreen extends ConsumerWidget {
   }
 
   @override
+  // Construye la UI con lista de pagos, loading, error o vacío
   Widget build(BuildContext context, WidgetRef ref) {
     final paymentsAsync = ref.watch(studentPaymentsProvider((schoolId: schoolId, studentId: studentId)));
 
@@ -165,6 +168,7 @@ class StudentPaymentsScreen extends ConsumerWidget {
     );
   }
 
+  // Muestra el estado vacío cuando no hay transacciones
   Widget _buildEmptyState() {
     return Center(
       child: Column(
