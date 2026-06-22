@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from app.modules.payments.models.student_debt import DebtStatus
 
+# Esquema de lectura para deuda estudiantil
 class StudentDebtRead(BaseModel):
     id: UUID
     student_id: UUID

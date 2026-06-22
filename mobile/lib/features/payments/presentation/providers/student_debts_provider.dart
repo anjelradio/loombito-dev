@@ -5,6 +5,7 @@ import 'package:mobile/features/auth/auth.dart';
 import 'package:mobile/features/payments/domain/domain.dart';
 import 'package:mobile/features/payments/data/data.dart';
 
+// Estado de la UI para la lista de deudas
 class StudentDebtsState {
   final bool isLoading;
   final bool hasError;
@@ -33,11 +34,13 @@ class StudentDebtsState {
   }
 }
 
+// Notifier que gestiona la carga y pago de deudas
 class StudentDebtsNotifier extends StateNotifier<StudentDebtsState> {
   final StudentDebtRepositoryImpl repository;
 
   StudentDebtsNotifier({required this.repository}) : super(StudentDebtsState());
 
+  // Carga las deudas pendientes del estudiante desde el backend
   Future<void> loadDebts(String schoolId, String studentId) async {
     state = state.copyWith(isLoading: true, hasError: false);
     
@@ -62,6 +65,7 @@ class StudentDebtsNotifier extends StateNotifier<StudentDebtsState> {
     }
   }
 
+  // Envía el pago al backend y elimina la deuda de la lista local si es exitoso
   Future<bool> payDebt(String schoolId, String studentId, String debtId) async {
     try {
       await repository.payDebt(schoolId, studentId, debtId);
@@ -75,6 +79,7 @@ class StudentDebtsNotifier extends StateNotifier<StudentDebtsState> {
   }
 }
 
+// Proveedor del repositorio de deudas con token de autenticación
 final studentDebtRepositoryProvider = Provider<StudentDebtRepositoryImpl>((ref) {
   final authState = ref.watch(authProvider);
   final accessToken = authState.user?.token ?? '';
@@ -84,6 +89,7 @@ final studentDebtRepositoryProvider = Provider<StudentDebtRepositoryImpl>((ref) 
   );
 });
 
+// Proveedor del estado de deudas, indexado por studentId
 final studentDebtsProvider = StateNotifierProvider.family<StudentDebtsNotifier, StudentDebtsState, String>((ref, id) {
   final repository = ref.watch(studentDebtRepositoryProvider);
   return StudentDebtsNotifier(repository: repository);

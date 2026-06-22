@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+# Esquema de lectura para pago estudiantil
 class StudentPaymentRead(BaseModel):
     id: UUID
     student_debt_id: UUID

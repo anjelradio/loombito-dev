@@ -8,6 +8,7 @@ from sqlmodel import Field
 from app.core.base_model import UUIDBaseModel
 
 
+# Estados posibles de una deuda estudiantil
 class DebtStatus(str, Enum):
     PENDING = "PENDING" #PENDIENTE
     PAID = "PAID" #PAGADO
@@ -15,6 +16,7 @@ class DebtStatus(str, Enum):
     CANCELLED = "CANCELLED" #CANCELADO
 
 
+# Modelo de deuda de estudiante
 class StudentDebt(UUIDBaseModel, table=True):
     __tablename__ = "student_debts"
 

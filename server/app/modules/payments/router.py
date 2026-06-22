@@ -20,6 +20,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Genera deudas en segundo plano para un concepto
 def background_generate_debts_for_concept(school_id: UUID, concept_id: UUID):
     try:
         logger.info(f"Starting background debt generation for concept {concept_id} in school {school_id}")
@@ -30,6 +31,7 @@ def background_generate_debts_for_concept(school_id: UUID, concept_id: UUID):
     except Exception as e:
         logger.error(f"Error generating debts in background for concept {concept_id}: {str(e)}", exc_info=True)
 
+# Desactiva deudas pendientes en segundo plano al eliminar un concepto
 def background_delete_debts_for_concept(concept_id: UUID):
     try:
         logger.info(f"Starting background debt deletion for concept {concept_id}")
@@ -46,6 +48,7 @@ def background_delete_debts_for_concept(concept_id: UUID):
     "/schools/{school_id}/concepts",
     response_model=list[PaymentConceptRead],
 )
+# Lista los conceptos de pago de un colegio
 def list_payment_concepts(school_id: UUID, db: DBSession, actor: CurrentActor):
     return PaymentConceptService(db).list_concepts(school_id, actor.user.id)
 
@@ -54,6 +57,7 @@ def list_payment_concepts(school_id: UUID, db: DBSession, actor: CurrentActor):
     response_model=PaymentConceptRead,
     status_code=status.HTTP_201_CREATED,
 )
+# Crea un concepto de pago y genera deudas en segundo plano si no es recurrente
 def create_payment_concept(school_id: UUID, payload: PaymentConceptCreate, db: DBSession, actor: CurrentActor, background_tasks: BackgroundTasks):
     concept = PaymentConceptService(db).create_concept(school_id, actor.user.id, payload)
     
@@ -67,6 +71,7 @@ def create_payment_concept(school_id: UUID, payload: PaymentConceptCreate, db: D
     "/schools/{school_id}/concepts/{concept_id}",
     response_model=PaymentConceptRead,
 )
+# Actualiza un concepto de pago existente
 def update_payment_concept(
     school_id: UUID, concept_id: UUID, payload: PaymentConceptUpdate, db: DBSession, actor: CurrentActor
 ):
@@ -76,6 +81,7 @@ def update_payment_concept(
     "/schools/{school_id}/concepts/{concept_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
+# Desactiva un concepto de pago y sus deudas pendientes en segundo plano
 def delete_payment_concept(school_id: UUID, concept_id: UUID, db: DBSession, actor: CurrentActor, background_tasks: BackgroundTasks):
     PaymentConceptService(db).delete_concept(school_id, concept_id, actor.user.id)
     background_tasks.add_task(background_delete_debts_for_concept, concept_id)
@@ -85,6 +91,7 @@ def delete_payment_concept(school_id: UUID, concept_id: UUID, db: DBSession, act
     status_code=status.HTTP_200_OK,
     tags=["Cron Jobs"],
 )
+# Endpoint para CRON que genera deudas recurrentes automáticamente
 def cron_generate_recurring_debts(db: DBSession, authorization: str | None = Header(None)):
     """
     Endpoint intended to be called by a CRON job (e.g. Render Cron Jobs).
@@ -109,6 +116,7 @@ from typing import Optional
     "/schools/{school_id}/students/{student_id}/debts",
     response_model=list[StudentDebtRead],
 )
+# Lista las deudas de un estudiante (filtrable por estado)
 def list_student_debts(
     school_id: UUID, 
     student_id: UUID, 
@@ -122,6 +130,7 @@ def list_student_debts(
     "/schools/{school_id}/students/{student_id}/debts/{debt_id}/pay",
     status_code=status.HTTP_200_OK,
 )
+# Procesa el pago de una deuda estudiantil
 def pay_student_debt(
     school_id: UUID,
     student_id: UUID,
@@ -138,6 +147,7 @@ from app.modules.payments.schemas.student_payment_schema import StudentPaymentRe
     "/schools/{school_id}/students/{student_id}/payments",
     response_model=list[StudentPaymentRead],
 )
+# Lista los pagos realizados por un estudiante
 def list_student_payments(
     school_id: UUID, 
     student_id: UUID, 

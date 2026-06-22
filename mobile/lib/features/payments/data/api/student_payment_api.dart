@@ -14,6 +14,7 @@ class StudentPaymentApi {
         ),
       );
 
+  // Obtiene el historial de pagos de un estudiante
   Future<List<StudentPayment>> getStudentPayments(String schoolId, String studentId) async {
     try {
       final response = await dio.get('/payments/schools/$schoolId/students/$studentId/payments');

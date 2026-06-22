@@ -8,6 +8,7 @@ from sqlmodel import Field
 from app.core.base_model import UUIDBaseModel
 
 
+# Modelo de concepto de pago (ej. pensión, cuota)
 class PaymentConcept(UUIDBaseModel, table=True):
     __tablename__ = "payment_concepts"
     __table_args__ = (

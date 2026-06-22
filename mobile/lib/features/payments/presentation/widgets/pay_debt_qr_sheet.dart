@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/features/payments/domain/entities/student_debt.dart';
 import 'package:mobile/features/shared/shared.dart';
 
+// Muestra el BottomSheet con el QR para pagar una deuda
 Future<bool?> showPayDebtQrSheet(BuildContext context, StudentDebt debt) {
   return showModalBottomSheet<bool>(
     context: context,
@@ -11,6 +12,7 @@ Future<bool?> showPayDebtQrSheet(BuildContext context, StudentDebt debt) {
   );
 }
 
+// Contenido del modal QR con spinner de carga y botones
 class _PayDebtQrSheetContent extends StatefulWidget {
   final StudentDebt debt;
 
@@ -24,6 +26,7 @@ class _PayDebtQrSheetContentState extends State<_PayDebtQrSheetContent> {
   bool _isLoadingQr = true;
 
   @override
+  // Simula carga de pasarela por 1.5s antes de mostrar el QR
   void initState() {
     super.initState();
     Future.delayed(const Duration(milliseconds: 1500), () {
@@ -34,6 +37,7 @@ class _PayDebtQrSheetContentState extends State<_PayDebtQrSheetContent> {
   }
 
   @override
+  // Construye el modal con QR, monto y botones Cancelar/Ya pagué
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.bottomCenter,

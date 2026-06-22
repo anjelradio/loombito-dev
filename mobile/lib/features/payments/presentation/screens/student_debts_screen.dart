@@ -6,6 +6,7 @@ import 'package:mobile/features/payments/presentation/widgets/empty_debts_view.d
 import 'package:mobile/features/payments/presentation/widgets/student_debt_list_item.dart';
 import 'package:mobile/features/payments/presentation/widgets/pay_debt_qr_sheet.dart';
 
+// Pantalla principal que muestra las deudas del estudiante
 class StudentDebtsScreen extends ConsumerStatefulWidget {
   final String schoolId;
   final String studentId;
@@ -24,6 +25,7 @@ class StudentDebtsScreen extends ConsumerStatefulWidget {
 
 class _StudentDebtsScreenState extends ConsumerState<StudentDebtsScreen> {
   @override
+  // Inicia la carga de deudas al montar la pantalla
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -31,6 +33,7 @@ class _StudentDebtsScreenState extends ConsumerState<StudentDebtsScreen> {
     });
   }
 
+  // Construye la vista de error con mensaje y botón de reintentar
   Widget _buildErrorView(BuildContext context, String message) {
     return Center(
       child: Padding(
@@ -57,6 +60,7 @@ class _StudentDebtsScreenState extends ConsumerState<StudentDebtsScreen> {
   }
 
   @override
+  // Construye la UI con lista de deudas, loading, error o vacío
   Widget build(BuildContext context) {
     final state = ref.watch(studentDebtsProvider(widget.studentId));
 

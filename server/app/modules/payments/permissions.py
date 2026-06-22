@@ -6,6 +6,7 @@ from app.modules.schools.models import SchoolRole
 from app.modules.schools.repositories import SchoolUserRepository
 
 
+# Verifica que el usuario sea owner o admin del colegio
 def ensure_admin_or_owner(
     school_user_repo: SchoolUserRepository, user_id: UUID, school_id: UUID
 ) -> None:

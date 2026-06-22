@@ -7,6 +7,7 @@ from sqlmodel import Field
 from app.core.base_model import UUIDBaseModel
 
 
+# Modelo de pago realizado por un estudiante
 class StudentPayment(UUIDBaseModel, table=True):
     __tablename__ = "student_payments"
 

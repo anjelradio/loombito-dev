@@ -14,6 +14,7 @@ class StudentDebtApi {
         ),
       );
 
+  // Obtiene las deudas pendientes de un estudiante
   Future<List<StudentDebt>> getPendingDebts(String schoolId, String studentId) async {
     final response = await dio.get(
       '/payments/schools/$schoolId/students/$studentId/debts?status=PENDING',
@@ -26,6 +27,7 @@ class StudentDebtApi {
     return data.map((json) => StudentDebt.fromJson(json)).toList();
   }
 
+  // Envía la solicitud de pago de una deuda al backend
   Future<void> payDebt(String schoolId, String studentId, String debtId) async {
     await dio.post(
       '/payments/schools/$schoolId/students/$studentId/debts/$debtId/pay',
