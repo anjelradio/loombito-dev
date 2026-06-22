@@ -8,7 +8,9 @@ import { z } from "zod";
 
 const baseUrl = `${env.API_URL}/payments`;
 
+// API para obtener el historial de pagos de un estudiante
 export const studentPaymentApi = {
+  // Obtiene los pagos del estudiante desde el backend
   async getStudentPayments(schoolId: string, studentId: string): Promise<ApiResult<StudentPayment[]>> {
     const token = await getToken();
     if (!token) {
