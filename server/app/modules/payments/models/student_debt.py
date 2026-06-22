@@ -9,10 +9,10 @@ from app.core.base_model import UUIDBaseModel
 
 
 class DebtStatus(str, Enum):
-    PENDING = "PENDING"
-    PAID = "PAID"
-    OVERDUE = "OVERDUE"
-    CANCELLED = "CANCELLED"
+    PENDING = "PENDING" #PENDIENTE
+    PAID = "PAID" #PAGADO
+    OVERDUE = "OVERDUE" #EXPIRADO
+    CANCELLED = "CANCELLED" #CANCELADO
 
 
 class StudentDebt(UUIDBaseModel, table=True):

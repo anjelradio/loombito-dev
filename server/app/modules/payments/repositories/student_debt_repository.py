@@ -17,6 +17,7 @@ class StudentDebtRepository:
         query = select(StudentDebt).where(StudentDebt.id == id, StudentDebt.state == True)
         return self.db.exec(query).first()
 
+    #crear varios registros
     def bulk_create(self, debts: list[StudentDebt]) -> None:
         self.db.add_all(debts)
         self.db.commit()
@@ -33,7 +34,7 @@ class StudentDebtRepository:
             StudentDebt.concept_id == concept_id,
             StudentDebt.billing_month == billing_month,
             StudentDebt.billing_year == billing_year,
-            StudentDebt.state == True,
+            StudentDebt.state
         )
         return self.db.exec(query).first()
 
@@ -44,7 +45,7 @@ class StudentDebtRepository:
             .where(
                 StudentDebt.concept_id == concept_id,
                 StudentDebt.status == "PENDING",
-                StudentDebt.state == True,
+                StudentDebt.state
             )
             .values(state=False)
         )
@@ -57,7 +58,7 @@ class StudentDebtRepository:
             PaymentConcept, PaymentConcept.id == StudentDebt.concept_id
         ).where(
             StudentDebt.student_id == student_id,
-            StudentDebt.state == True,
+            StudentDebt.state
         )
         if status:
             query = query.where(StudentDebt.status == status)
