@@ -3,10 +3,12 @@
 import { StudentPayment } from "@/features/payments/domain/entities/student-payment";
 import { AccentCard } from "@/features/shared/components/cards/AccentCard";
 
+// Props del componente de historial de transacciones
 interface Props {
   payments: StudentPayment[];
 }
 
+// Renderiza una tabla con el historial de pagos del estudiante
 export default function StudentPaymentsList({ payments }: Props) {
   if (payments.length === 0) return null;
 

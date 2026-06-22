@@ -8,6 +8,7 @@ import { studentApi } from "@/features/students/data/api/student-api";
 import StudentDebtsList from "@/features/payments/presentation/components/debts/StudentDebtsList";
 import StudentPaymentsList from "@/features/payments/presentation/components/debts/StudentPaymentsList";
 
+// Página servidor que carga deudas y pagos del estudiante en paralelo
 export default async function StudentDebtsPage({
   params,
 }: {

@@ -5,11 +5,13 @@ import { StudentPayment } from "@/features/payments/domain/entities/student-paym
 import { AccentCard } from "@/features/shared/components/cards/AccentCard";
 import StudentDebtCard from "./StudentDebtCard";
 
+// Props del listado de deudas con resumen de cuenta
 interface Props {
   debts: StudentDebt[];
   payments: StudentPayment[];
 }
 
+// Muestra el resumen de cuenta y la lista de deudas pendientes
 export default function StudentDebtsList({ debts, payments }: Props) {
   const totalAmount = debts.reduce((sum, debt) => sum + debt.amount, 0);
   const totalPaid = payments.reduce((sum, payment) => sum + payment.amount_paid, 0);
