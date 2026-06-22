@@ -17,6 +17,7 @@ class StudentDebtService:
         self.school_user_repo = SchoolUserRepository(db)
         self.student_repo = StudentRepository(db)
 
+    # Verifica que el usuario sea padre del estudiante o administrador del colegio
     def _ensure_can_manage(self, school_id: UUID, user_id: UUID, student_id: UUID) -> None:
         from app.modules.students.repositories.student_parent_repository import StudentParentRepository
         parent_repo = StudentParentRepository(self.db)
@@ -24,6 +25,7 @@ class StudentDebtService:
             return  # Parent is allowed
         ensure_admin_or_owner(self.school_user_repo, user_id, school_id)
 
+    # Lista las deudas de un estudiante con el nombre del concepto
     def list_student_debts(
         self, school_id: UUID, student_id: UUID, user_id: UUID, status: str | None = None
     ) -> list[StudentDebtRead]:
@@ -52,6 +54,7 @@ class StudentDebtService:
             for debt, concept_name in debts_with_concept
         ]
 
+    # Procesa el pago de una deuda y registra la transacción
     def pay_debt(self, school_id: UUID, student_id: UUID, debt_id: UUID, user_id: UUID) -> StudentDebtRead:
         self._ensure_can_manage(school_id, user_id, student_id)
         
@@ -81,6 +84,7 @@ class StudentDebtService:
         
         return self.list_student_debts(school_id, student_id, user_id)[0] # Just a simple return, though it might be better to return a basic object. We return success.
 
+    # Lista los pagos realizados por un estudiante
     def list_student_payments(
         self, school_id: UUID, student_id: UUID, user_id: UUID
     ):

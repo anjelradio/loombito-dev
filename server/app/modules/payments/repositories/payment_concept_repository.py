@@ -10,6 +10,7 @@ class PaymentConceptRepository:
     def __init__(self, db: Session):
         self.db = db
 
+    # Obtiene un concepto de pago activo por ID y colegio
     def get(self, school_id: UUID, concept_id: UUID) -> PaymentConcept | None:
         query = select(PaymentConcept).where(
             PaymentConcept.id == concept_id,
@@ -18,6 +19,7 @@ class PaymentConceptRepository:
         )
         return self.db.exec(query).first()
 
+    # Obtiene todos los conceptos recurrentes activos
     def get_all_recurring_active(self) -> list[PaymentConcept]:
         query = select(PaymentConcept).where(
             PaymentConcept.is_recurring == True,
@@ -25,6 +27,7 @@ class PaymentConceptRepository:
         )
         return list(self.db.exec(query).all())
 
+    # Busca un concepto por nombre dentro de un colegio
     def get_by_name(self, school_id: UUID, name: str) -> PaymentConcept | None:
         query = select(PaymentConcept).where(
             PaymentConcept.name == name,
@@ -33,6 +36,7 @@ class PaymentConceptRepository:
         )
         return self.db.exec(query).first()
 
+    # Lista los conceptos activos de un colegio
     def list_by_school(self, school_id: UUID) -> list[PaymentConcept]:
         query = select(PaymentConcept).where(
             PaymentConcept.school_id == school_id,
@@ -40,6 +44,7 @@ class PaymentConceptRepository:
         ).order_by(PaymentConcept.created_date.desc())
         return list(self.db.exec(query).all())
 
+    # Crea un nuevo concepto de pago
     def create(self, school_id: UUID, payload: PaymentConceptCreate) -> PaymentConcept:
         concept = PaymentConcept(**payload.model_dump(), school_id=school_id)
         self.db.add(concept)
@@ -47,6 +52,7 @@ class PaymentConceptRepository:
         self.db.refresh(concept)
         return concept
 
+    # Actualiza los campos de un concepto de pago
     def update(self, concept: PaymentConcept, payload: PaymentConceptUpdate) -> PaymentConcept:
         update_data = payload.model_dump(exclude_unset=True)
         for key, value in update_data.items():
@@ -56,6 +62,7 @@ class PaymentConceptRepository:
         self.db.refresh(concept)
         return concept
 
+    # Desactiva un concepto de pago (borrado lógico)
     def delete(self, concept: PaymentConcept) -> None:
         concept.state = False
         self.db.add(concept)

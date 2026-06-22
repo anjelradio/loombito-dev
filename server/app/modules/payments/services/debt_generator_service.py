@@ -21,6 +21,7 @@ class DebtGeneratorService:
         self.debt_repo = StudentDebtRepository(db)
         self.student_repo = StudentRepository(db)
 
+    # Genera deudas para todos los estudiantes activos de un concepto específico
     def generate_debts_for_concept(
         self,
         school_id: UUID,
@@ -73,6 +74,7 @@ class DebtGeneratorService:
         
         return len(debts_to_create)
 
+    # Genera deudas para todos los conceptos recurrentes activos (cron)
     def generate_all_recurring_debts(self) -> dict:
         """
         Triggered by a cron job. Generates debts for ALL recurring concepts across ALL schools.

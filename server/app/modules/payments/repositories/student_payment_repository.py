@@ -6,10 +6,12 @@ class StudentPaymentRepository:
     def __init__(self, db: Session):
         self.db = db
 
+    # Crea un nuevo registro de pago
     def create(self, payment: StudentPayment) -> StudentPayment:
         self.db.add(payment)
         return payment
 
+    # Lista los pagos de un estudiante con el nombre del concepto
     def list_by_student(self, student_id: UUID) -> list[tuple[StudentPayment, str]]:
         from app.modules.payments.models.student_debt import StudentDebt
         from app.modules.payments.models.payment_concept import PaymentConcept
